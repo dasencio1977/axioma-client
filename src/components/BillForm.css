@@ -1,0 +1,6 @@
+/* client/src/components/BillForm.css */
+
+/* Podemos añadir estilos específicos aquí si son necesarios en el futuro */
+.bill-form-container {
+    /* Hereda la mayoría de los estilos de ClientForm.css y InvoiceForm.css */
+}

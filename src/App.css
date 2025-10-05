@@ -32,7 +32,37 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
+}
+
+/* client/src/App.css o index.css */
+.sidebar-logo {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.sidebar-logo img {
+  display: block;
+  /* Elimina espacio extra debajo de la imagen */
+  margin: 0 auto;
+  /* Centra la imagen */
+}
+
+.page-header-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Espacio entre el icono y el texto */
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.page-icon {
+  width: 64px;
+  /* Tamaño del icono */
+  height: 64px;
+  object-fit: contain;
 }

@@ -1,0 +1,21 @@
+/* client/src/components/VendorForm.css */
+.vendor-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px 30px;
+}
+
+.form-section-header {
+    grid-column: 1 / -1;
+    /* Ocupa todas las columnas */
+    margin-top: 20px;
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

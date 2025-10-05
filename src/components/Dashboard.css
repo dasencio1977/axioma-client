@@ -1,0 +1,82 @@
+/* client/src/components/Dashboard.css */
+
+.dashboard-container {
+    padding: 20px;
+}
+
+.kpi-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.kpi-card {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpi-card h3 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+    color: #555;
+    text-transform: uppercase;
+}
+
+.kpi-card .value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.kpi-card .value.positive {
+    color: #28a745;
+    /* Verde */
+}
+
+.kpi-card .value.warning {
+    color: #ffc107;
+    /* Amarillo */
+}
+
+.kpi-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    /* Mantiene la proporción 2/3 y 1/3 */
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.chart-container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    /* La clave para controlar el tamaño del gráfico */
+    position: relative;
+    height: 400px;
+    /* Le damos una altura fija */
+}
+
+@media (max-width: 992px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+        /* Una sola columna */
+    }
+}
