@@ -64,6 +64,7 @@ const Layout = ({ children }) => {
                                 <ul className="submenu">
                                     <li><NavLink to="/invoices">Facturas</NavLink></li>
                                     <li><NavLink to="/clients">Clientes</NavLink></li>
+                                    <li><NavLink to="/products">Productos y Servicios</NavLink></li>
                                 </ul>
                             )}
                         </li>

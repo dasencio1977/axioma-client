@@ -195,27 +195,39 @@ const Invoices = () => {
                                     <th>Nº Factura</th>
                                     <th>Cliente</th>
                                     <th>Total</th>
+                                    <th>Saldo Pendiente</th> {/* <-- 1. Nueva Columna */}
                                     <th>Estado</th>
                                     <th>Vencimiento</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {statusFilteredInvoices.map((invoice) => (
-                                    <tr key={invoice.invoice_id}>
-                                        <td>{invoice.invoice_number}</td>
-                                        <td>{invoice.client_name}</td>
-                                        <td>${parseFloat(invoice.total_amount).toLocaleString('es-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                        <td><span className={`status-badge ${getStatusClass(invoice.status)}`}>{invoice.status}</span></td>
-                                        <td>{formatDate(invoice.due_date)}</td>
-                                        <td className="actions-cell">
-                                            <button className="btn-view" onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}>Ver</button>
-                                            <button className="btn-edit" onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar</button>
-                                            <button className="btn-pdf" onClick={() => handleDownload(invoice.invoice_id, invoice.invoice_number)}>PDF</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(invoice.invoice_id)}>Eliminar</button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {statusFilteredInvoices.map((invoice) => {
+                                    const balanceDue = parseFloat(invoice.total_amount) - parseFloat(invoice.amount_paid);
+                                    return (
+                                        <tr key={invoice.invoice_id}>
+                                            <td>{invoice.invoice_number}</td>
+                                            <td>{invoice.client_name}</td>
+                                            <td>${parseFloat(invoice.total_amount).toLocaleString('es-US', { minimumFractionDigits: 2 })}</td>
+                                            {/* 3. Mostramos la nueva celda con el saldo */}
+                                            <td style={{ fontWeight: 'bold' }}>
+                                                ${balanceDue.toLocaleString('es-US', { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td>
+                                                <span className={`status-badge ${getStatusClass(invoice.status)}`}>
+                                                    {invoice.status}
+                                                </span>
+                                            </td>
+                                            <td>{formatDate(invoice.due_date)}</td>
+                                            <td className="actions-cell">
+                                                <button className="btn-view" onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}>Ver</button>
+                                                <button className="btn-edit" onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar</button>
+                                                <button className="btn-pdf" onClick={() => handleDownload(invoice.invoice_id, invoice.invoice_number)}>PDF</button>
+                                                <button className="btn-delete" onClick={() => handleDelete(invoice.invoice_id)}>Eliminar</button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

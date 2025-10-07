@@ -11,75 +11,99 @@ import './InvoiceForm.css';
 //     { id: 5, code: 'MNT-WEB', description: 'Mantenimiento Web Mensual', price: 250.00 },
 // ];
 
-const apiUrl = process.env.REACT_APP_API_URL;
+//const apiUrl = process.env.REACT_APP_API_URL;
 
 const InvoiceForm = () => {
     const [invoiceData, setInvoiceData] = useState({
-        client_id: '',
-        invoice_number: '',
-        issue_date: new Date().toISOString().slice(0, 10),
-        due_date: '',
-        status: 'Borrador',
+        client_id: '', invoice_number: '', issue_date: new Date().toISOString().slice(0, 10),
+        due_date: '', status: 'Borrador',
     });
+    const [profile, setProfile] = useState(null);
     const [products, setProducts] = useState([]);
-    const [items, setItems] = useState([{ productId: '', description: '', quantity: 1, unit_price: 0 }]);
+    const [items, setItems] = useState([{ product_id: '', description: '', quantity: 1, unit_price: 0 }]);
     const [clients, setClients] = useState([]);
-    const [totalAmount, setTotalAmount] = useState(0);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const { id } = useParams();
+
+    const [subtotal, setSubtotal] = useState(0);
+    const [taxDetails, setTaxDetails] = useState([]);
+    const [grandTotal, setGrandTotal] = useState(0);
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         const loadInitialData = async () => {
             setLoading(true);
             const token = localStorage.getItem('token');
             try {
-                // 3. Hacemos todas las peticiones necesarias en paralelo
-                const [clientsRes, productsRes] = await Promise.all([
-                    fetch(`${apiUrl}/api/clients?all=true`, { headers: { 'x-auth-token': token } }),
-                    fetch(`${apiUrl}/api/products?all=true`, { headers: { 'x-auth-token': token } })
+                const [clientsRes, productsRes, profileRes] = await Promise.all([
+                    fetch(`${API_URL}/api/clients?all=true`, { headers: { 'x-auth-token': token } }),
+                    fetch(`${API_URL}/api/products?all=true`, { headers: { 'x-auth-token': token } }),
+                    fetch(`${API_URL}/api/profile`, { headers: { 'x-auth-token': token } })
                 ]);
-
                 const clientsData = await clientsRes.json();
                 const productsData = await productsRes.json();
+                const profileData = await profileRes.json();
                 setClients(clientsData.clients || []);
-                setProducts(productsData || []); // La API de productos devuelve un array directamente
+                setProducts(productsData || []);
+                setProfile(profileData);
 
                 if (id) {
-                    const invoiceRes = await fetch(`${apiUrl}/api/invoices/${id}`, { headers: { 'x-auth-token': token } });
+                    const invoiceRes = await fetch(`${API_URL}/api/invoices/${id}`, { headers: { 'x-auth-token': token } });
                     const invoiceToEdit = await invoiceRes.json();
                     setInvoiceData({
-                        client_id: invoiceToEdit.client_id,
-                        invoice_number: invoiceToEdit.invoice_number,
+                        client_id: invoiceToEdit.client_id, invoice_number: invoiceToEdit.invoice_number,
                         issue_date: new Date(invoiceToEdit.issue_date).toISOString().slice(0, 10),
                         due_date: new Date(invoiceToEdit.due_date).toISOString().slice(0, 10),
                         status: invoiceToEdit.status,
                     });
                     setItems(invoiceToEdit.items);
+                } else {
+                    const nextNumRes = await fetch(`${API_URL}/api/invoices/next-number`, { headers: { 'x-auth-token': token } });
+                    const nextNumData = await nextNumRes.json();
+                    setInvoiceData(prev => ({ ...prev, invoice_number: nextNumData.nextInvoiceNumber }));
                 }
             } catch (err) {
-                toast.error('Error al cargar los datos iniciales.');
+                toast.error('Error al cargar datos iniciales.');
             } finally {
                 setLoading(false);
             }
         };
         loadInitialData();
-    }, [id]);
+    }, [id, API_URL]);
 
     useEffect(() => {
-        const total = items.reduce((sum, item) => (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0) + sum, 0);
-        setTotalAmount(total);
-    }, [items]);
+        if (!products.length || !profile) return;
+        let currentSubtotal = 0;
+        const taxMap = {};
+        items.forEach(item => {
+            const lineSubtotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+            currentSubtotal += lineSubtotal;
+            const product = products.find(p => p.product_id === parseInt(item.product_id));
+            if (product) {
+                for (let i = 1; i <= 4; i++) {
+                    if (product[`tax${i}_applies`] && profile[`tax${i}_rate`] > 0) {
+                        const taxName = product[`tax${i}_name`] || `Impuesto ${i}`;
+                        const taxRate = parseFloat(profile[`tax${i}_rate`]);
+                        const taxAmount = lineSubtotal * taxRate;
+                        if (!taxMap[taxName]) taxMap[taxName] = { rate: taxRate, amount: 0 };
+                        taxMap[taxName].amount += taxAmount;
+                    }
+                }
+            }
+        });
+        const calculatedTaxDetails = Object.keys(taxMap).map(name => ({ name, ...taxMap[name] }));
+        const totalTaxes = calculatedTaxDetails.reduce((sum, tax) => sum + tax.amount, 0);
+        setSubtotal(currentSubtotal);
+        setTaxDetails(calculatedTaxDetails);
+        setGrandTotal(currentSubtotal + totalTaxes);
+    }, [items, products, profile]);
 
-    const handleInvoiceChange = (e) => {
-        setInvoiceData({ ...invoiceData, [e.target.name]: e.target.value });
-    };
 
     // 4. Actualizamos handleItemChange para que use la lista 'products' del estado
     const handleItemChange = (index, e) => {
         const { name, value } = e.target;
         const updatedItems = [...items];
-
         if (name === 'product_id') {
             const product = products.find(p => p.product_id === parseInt(value));
             if (product) {
@@ -93,30 +117,22 @@ const InvoiceForm = () => {
         setItems(updatedItems);
     };
 
-    const addItem = () => {
-        setItems([...items, { productId: '', item_code: '', description: '', quantity: 1, unit_price: 0 }]);
-    };
-
-    const removeItem = (index) => {
-        if (items.length > 1) {
-            setItems(items.filter((_, i) => i !== index));
-        }
-    };
+    const addItem = () => setItems([...items, { product_id: '', item_code: '', description: '', quantity: 1, unit_price: 0 }]);
+    const removeItem = (index) => { if (items.length > 1) setItems(items.filter((_, i) => i !== index)); };
+    const handleInvoiceChange = (e) => setInvoiceData({ ...invoiceData, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
-        const finalInvoice = { ...invoiceData, total_amount: totalAmount, items: items.map(({ productId, ...rest }) => rest) };
-        console.log("Submitting invoice:", finalInvoice);
+        const finalInvoice = { ...invoiceData, items }; // El backend recalculará los totales
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${apiUrl}/api/invoices/${id}` : `${apiUrl}/api/invoices`;
+        const url = id ? `${API_URL}/api/invoices/${id}` : `${API_URL}/api/invoices`;
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                body: JSON.stringify(finalInvoice),
-            });
-            if (!response.ok) throw new Error(`Error al ${id ? 'actualizar' : 'crear'} la factura.`);
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'x-auth-token': token }, body: JSON.stringify(finalInvoice) });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.msg || `Error al ${id ? 'actualizar' : 'crear'} la factura.`);
+            }
             toast.success(`Factura ${id ? 'actualizada' : 'creada'} con éxito.`);
             navigate('/invoices');
         } catch (err) {
@@ -142,7 +158,7 @@ const InvoiceForm = () => {
                     </div>
                     <div className="form-group">
                         <label htmlFor="invoice_number">Nº Factura</label>
-                        <input id="invoice_number" type="text" name="invoice_number" value={invoiceData.invoice_number} onChange={handleInvoiceChange} required />
+                        <input id="invoice_number" type="text" name="invoice_number" value={invoiceData.invoice_number} onChange={handleInvoiceChange} readOnly required />
                     </div>
                     <div className="form-group">
                         <label htmlFor="issue_date">Fecha de Emisión</label>
@@ -190,8 +206,13 @@ const InvoiceForm = () => {
                         );
                     })}
                 </div>
-                <div className="totals-section">
-                    <h3>Total General: ${totalAmount.toFixed(2)}</h3>
+                <div className="totals-section" style={{ textAlign: 'right' }}>
+                    <p style={{ margin: '5px 0' }}><strong>Subtotal:</strong> <span>${subtotal.toFixed(2)}</span></p>
+                    {taxDetails.map(tax => (
+                        <p style={{ margin: '5px 0' }} key={tax.name}><strong>{tax.name} ({(tax.rate * 100).toFixed(2)}%):</strong> <span>${tax.amount.toFixed(2)}</span></p>
+                    ))}
+                    <hr />
+                    <h3 style={{ margin: '10px 0' }}>Total General: <span>${grandTotal.toFixed(2)}</span></h3>
                 </div>
                 <div className="form-actions">
                     <button type="button" className="btn-secondary" onClick={() => navigate('/invoices')}>Cancelar</button>

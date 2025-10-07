@@ -28,7 +28,7 @@
 
 .company-details {
     text-align: center;
-    padding: 10px;
+    padding: 5px;
 }
 
 .company-details h2 {
@@ -78,6 +78,7 @@
     margin: 0;
     font-size: 1.2em;
     font-weight: bold;
+    margin-top: 5px;
 }
 
 .total-section .status {
@@ -90,4 +91,46 @@
 .payment-history {
     margin-top: 40px;
     text-align: left;
+}
+
+.btn-group-primary {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-primary-group button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+    opacity: 0.8;
+    margin-right: 5px;
+}
+
+.btn-primary-group button:hover {
+    background-color: #0056b3;
+}
+
+.status-selector {
+    margin-top: 20px;
+    font-size: 1rem;
+    width: 100%;
+    height: 100px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.status-selector select {
+    height: auto;
+    text-align: left;
+    border-radius: 4px;
+    box-sizing: border-box;
 }

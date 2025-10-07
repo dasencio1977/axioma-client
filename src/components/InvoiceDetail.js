@@ -40,7 +40,7 @@ const InvoiceDetail = () => {
         const token = localStorage.getItem('token');
         try {
             toast.info('Generando PDF...');
-            const res = await fetch(`http://localhost:5000/api/invoices/${id}/pdf`, {
+            const res = await fetch(`${apiUrl}/api/invoices/${id}/pdf`, {
                 headers: { 'x-auth-token': token },
             });
             if (!res.ok) throw new Error('No se pudo generar el PDF.');
@@ -61,7 +61,7 @@ const InvoiceDetail = () => {
         const newStatus = e.target.value;
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`http://localhost:5000/api/invoices/${id}/status`, {
+            const response = await fetch(`${apiUrl}/api/invoices/${id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                 body: JSON.stringify({ status: newStatus }),
@@ -83,12 +83,14 @@ const InvoiceDetail = () => {
     return (
         <div>
             <div className="invoice-detail-actions" style={{ marginBottom: '20px' }}>
-                <button onClick={() => navigate(-1)}>← Regresar</button>
-                <button onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar Factura</button>
-                <button onClick={handleDownload}>Descargar PDF</button>
-                {invoice.status !== 'Pagada' && (
-                    <button onClick={() => navigate(`/invoices/${id}/add-payment`)}>Registrar Pago</button>
-                )}
+                <div className="btn-primary-group">
+                    <button onClick={() => navigate(-1)}>← Regresar</button>
+                    <button onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar Factura</button>
+                    <button onClick={handleDownload}>Descargar PDF</button>
+
+                    {invoice.status !== 'Pagada' && (
+                        <button onClick={() => navigate(`/invoices/${id}/add-payment`)}>Registrar Pago</button>
+                    )}</div>
             </div>
 
             <div className="invoice-box">

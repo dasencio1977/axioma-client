@@ -7,37 +7,24 @@ import './ClientForm.css';
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const ExpenseForm = ({ onSave, onCancel, currentExpense }) => {
-    const [formData, setFormData] = useState({ description: '', amount: '', category: '', expense_date: new Date().toISOString().slice(0, 10), vendor_id: '' });
+    const [formData, setFormData] = useState({ description: '', amount: '', expense_account_id: '', expense_date: new Date().toISOString().slice(0, 10), vendor_id: '' });
+    const [expenseAccounts, setExpenseAccounts] = useState([]);
     const [vendors, setVendors] = useState([]);
 
     useEffect(() => {
-        const fetchVendors = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                // 1. Pedimos TODOS los suplidores para el dropdown.
-                const response = await fetch(`${apiUrl}/api/vendors?all=true`, {
-                    headers: { 'x-auth-token': token }
-                });
-                if (!response.ok) throw new Error('No se pudo cargar la lista de suplidores.');
+        const token = localStorage.getItem('token');
+        // Cargar cuentas de Gasto y Suplidores
+        Promise.all([
+            fetch(`${apiUrl}/api/accounts?all=true`, { headers: { 'x-auth-token': token } }),
+            fetch(`${apiUrl}/api/vendors?all=true`, { headers: { 'x-auth-token': token } })
+        ]).then(async ([accRes, venRes]) => {
+            const accData = await accRes.json();
+            const venData = await venRes.json();
+            setExpenseAccounts(accData.filter(a => a.account_type === 'Gasto'));
+            setVendors(venData);
+        });
 
-                const data = await response.json();
-                // 2. Ahora 'data' es un array simple, como esperamos.
-                setVendors(data);
-            } catch (err) {
-                toast.error(err.message);
-            }
-        };
-        fetchVendors();
-
-        if (currentExpense) {
-            setFormData({
-                description: currentExpense.description || '',
-                amount: currentExpense.amount || '',
-                category: currentExpense.category || '',
-                expense_date: new Date(currentExpense.expense_date).toISOString().slice(0, 10),
-                vendor_id: currentExpense.vendor_id || ''
-            });
-        }
+        if (currentExpense) { setFormData(currentExpense); }
     }, [currentExpense]);
 
     const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -55,6 +42,13 @@ const ExpenseForm = ({ onSave, onCancel, currentExpense }) => {
                 <div className="form-group">
                     <label htmlFor="amount">Monto</label>
                     <input id="amount" type="number" name="amount" value={formData.amount} onChange={onChange} min="0" step="0.01" required />
+                </div>
+                <div className="form-group">
+                    <label>Categoría (Cuenta de Gasto)</label>
+                    <select name="expense_account_id" value={formData.expense_account_id} onChange={onChange} required>
+                        <option value="">Selecciona una categoría...</option>
+                        {expenseAccounts.map(acc => <option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>)}
+                    </select>
                 </div>
                 <div className="form-group">
                     <label htmlFor="vendor_id">Suplidor (Opcional)</label>

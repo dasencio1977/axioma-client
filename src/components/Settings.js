@@ -140,10 +140,15 @@ const Settings = () => {
                             <div className="form-group"><label>ID de Corporación</label><input type="text" name="corporation_id" value={profile.corporation_id || ''} onChange={onChange} /></div>
                             <div className="form-group"><label>Merchant ID</label><input type="text" name="merchant_id" value={profile.merchant_id || ''} onChange={onChange} /></div>
                             <div className="form-group"><label>Fecha de Incorporación</label><input type="date" name="incorporation_date" value={profile.incorporation_date || ''} onChange={onChange} /></div>
-
                             <h3 className="form-section-header">Configuración Contable</h3>
                             <div className="form-group"><label>Comienzo del Año Fiscal</label><input type="date" name="fiscal_year_start" value={profile.fiscal_year_start || ''} onChange={onChange} /></div>
                             <div className="form-group"><label>Moneda Base</label><input type="text" name="base_currency" value={profile.base_currency || 'USD'} onChange={onChange} /></div>
+                            <h3 className="form-section-header">Tasas de Impuestos Globales</h3>
+                            <p>Define las tasas para los impuestos que nombraste en tus productos. Por ejemplo, para un 18%, escribe 0.18.</p>
+                            <div className="form-group"><label>Tasa del Impuesto 1</label><input type="number" name="tax1_rate" value={profile.tax1_rate || ''} onChange={onChange} step="0.0001" placeholder="Ej: 0.18" /></div>
+                            <div className="form-group"><label>Tasa del Impuesto 2</label><input type="number" name="tax2_rate" value={profile.tax2_rate || ''} onChange={onChange} step="0.0001" placeholder="Ej: 0.07" /></div>
+                            <div className="form-group"><label>Tasa del Impuesto 3</label><input type="number" name="tax3_rate" value={profile.tax3_rate || ''} onChange={onChange} step="0.0001" /></div>
+                            <div className="form-group"><label>Tasa del Impuesto 4</label><input type="number" name="tax4_rate" value={profile.tax4_rate || ''} onChange={onChange} step="0.0001" /></div>
                         </div>
                     )}
 
@@ -182,6 +187,15 @@ const Settings = () => {
                                 <select name="default_cost_of_goods_sold" value={profile.default_cost_of_goods_sold || ''} onChange={onChange}>
                                     <option value="">Seleccionar...</option>
                                     {accounts.filter(a => a.account_type === 'Gasto').map(acc => (
+                                        <option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Cuenta de Efectivo/Banco por Defecto (Activo)</label>
+                                <select name="default_cash_account" value={profile.default_cash_account || ''} onChange={onChange}>
+                                    <option value="">Seleccionar...</option>
+                                    {accounts.filter(a => a.account_type === 'Activo').map(acc => (
                                         <option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>
                                     ))}
                                 </select>
