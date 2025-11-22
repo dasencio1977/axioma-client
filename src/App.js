@@ -10,6 +10,8 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import Clients from './components/Clients';
 import ClientForm from './components/ClientForm';
+import ClientStatement from './components/ClientStatement';
+
 import Invoices from './components/Invoices';
 import InvoiceForm from './components/InvoiceForm';
 import InvoiceDetail from './components/InvoiceDetail';
@@ -63,6 +65,8 @@ function App() {
         <Route path="/clients" element={<PrivateRoute><Clients /></PrivateRoute>} />
         <Route path="/clients/new" element={<PrivateRoute><ClientForm /></PrivateRoute>} />
         <Route path="/clients/edit/:id" element={<PrivateRoute><ClientForm /></PrivateRoute>} />
+        <Route path="/clients/statement" element={<PrivateRoute><ClientStatement /></PrivateRoute>} />
+
 
         <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} />
         <Route path="/invoices/new" element={<PrivateRoute><InvoiceForm /></PrivateRoute>} />

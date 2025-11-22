@@ -73,6 +73,7 @@ const Layout = ({ children }) => {
                                 <ul className="list-none pl-6 mt-2 space-y-1">
                                     <li><NavLink to="/invoices" className={getNavLinkClass}>Facturas por Cobrar</NavLink></li>
                                     <li><NavLink to="/clients" className={getNavLinkClass}>Clientes</NavLink></li>
+                                    <li><NavLink to="/clients/statement" className={getNavLinkClass}>Estados de Cuenta</NavLink></li>
                                 </ul>
                             )}
                         </li>
