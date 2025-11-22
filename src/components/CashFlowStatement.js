@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Papa from 'papaparse';
-import './Invoices.css';
-import './Reports.css';
+// Eliminamos la importación de './Invoices.css' y './Reports.css'
+import axiomaIcon from '../assets/axioma-icon.png'; // Importamos el ícono
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -18,7 +18,9 @@ const CashFlowStatement = () => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         fetch(`${apiUrl}/api/profile`, { headers: { 'x-auth-token': token } })
-            .then(res => res.json()).then(data => setProfile(data));
+            .then(res => res.json())
+            .then(data => setProfile(data))
+            .catch(err => toast.error("No se pudo cargar el perfil de la empresa."));
     }, []);
 
     const handleSubmit = async (e) => {
@@ -41,7 +43,6 @@ const CashFlowStatement = () => {
             setLoading(false);
         }
     };
-
 
     const handleExport = async (format) => {
         if (!reportData) {
@@ -88,44 +89,69 @@ const CashFlowStatement = () => {
         }
     };
 
-
     return (
         <div>
+            {/* --- Encabezado --- */}
             {profile && (
-                <div className="report-header">
-                    <h2>{profile.company_name}</h2>
-                    <h3>Estado de Flujo de Caja</h3>
+                <div className="mb-6">
+                    <h2 className="text-3xl font-semibold text-gray-800">{profile.company_name}</h2>
+                    <h3 className="text-xl text-gray-600">Estado de Flujo de Caja</h3>
                 </div>
             )}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <div><label>Desde:</label><input type="date" name="startDate" value={dates.startDate} onChange={(e) => setDates({ ...dates, startDate: e.target.value })} required /></div>
-                <div><label>Hasta:</label><input type="date" name="endDate" value={dates.endDate} onChange={(e) => setDates({ ...dates, endDate: e.target.value })} required /></div>
-                <button type="submit" disabled={loading} className="btn-primary">{loading ? 'Generando...' : 'Generar Reporte'}</button>
+
+            {/* --- Formulario de Fecha --- */}
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-4 mb-4 p-4 bg-white rounded-xl shadow-lg">
+                <div className="flex items-center gap-2">
+                    <label htmlFor="startDate" className="text-sm font-bold text-gray-700">Desde:</label>
+                    <input type="date" name="startDate" id="startDate" value={dates.startDate} onChange={(e) => setDates({ ...dates, startDate: e.target.value })} required
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <label htmlFor="endDate" className="text-sm font-bold text-gray-700">Hasta:</label>
+                    <input type="date" name="endDate" id="endDate" value={dates.endDate} onChange={(e) => setDates({ ...dates, endDate: e.target.value })} required
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <button type="submit" disabled={loading}
+                    className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:bg-gray-400">
+                    {loading ? 'Generando...' : 'Generar Reporte'}
+                </button>
             </form>
 
-            {reportData && (
-                <div className="report-actions" style={{ display: 'flex', gap: '10px' }}>
-                    <button className="btn-secondary" onClick={() => handleExport('csv')}>Exportar a Excel</button>
-                    <button className="btn-secondary" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
-                </div>
-            )}
-
-            {loading && <p>Generando reporte...</p>}
+            {/* --- Botones de Acción y Resultados --- */}
+            {loading && <p className="text-center text-gray-600 mt-4">Generando reporte...</p>}
 
             {reportData && (
-                <div className="report-results">
-                    <h4>Resultados para el período del {new Date(reportData.startDate).toLocaleDateString()} al {new Date(reportData.endDate).toLocaleDateString()}</h4>
-                    <div className="balance-sheet-container">
-                        <div className="bs-column">
-                            <div className="bs-header">Actividades de Operación</div>
-                            <div className="bs-row"><span>Entradas de Efectivo (Cobros a Clientes)</span><span style={{ color: 'green' }}>${reportData.operatingActivities.inflows.toFixed(2)}</span></div>
-                            <div className="bs-row"><span>Salidas de Efectivo (Pagos a Suplidores/Gastos)</span><span style={{ color: 'red' }}>- ${reportData.operatingActivities.outflows.toFixed(2)}</span></div>
-                            <div className="bs-total-row"><span>Flujo de Caja Neto de Operaciones</span><span>${reportData.operatingActivities.net.toFixed(2)}</span></div>
+                <>
+                    <div className="flex gap-2 my-4">
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('csv')}>Exportar a Excel</button>
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            Resultados para el período del {new Date(reportData.startDate).toLocaleDateString()} al {new Date(reportData.endDate).toLocaleDateString()}
+                        </h4>
+
+                        <div className="max-w-2xl">
+                            <div className="text-lg font-semibold text-gray-800 border-b-2 border-gray-300 pb-2 mb-4">Actividades de Operación</div>
+                            <div className="flex justify-between py-2 border-b border-gray-100">
+                                <span className="text-gray-700">Entradas de Efectivo (Cobros a Clientes)</span>
+                                <span className="font-medium text-green-600">${reportData.operatingActivities.inflows.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b border-gray-100">
+                                <span className="text-gray-700">Salidas de Efectivo (Pagos y Gastos)</span>
+                                <span className="font-medium text-red-600">(${reportData.operatingActivities.outflows.toFixed(2)})</span>
+                            </div>
+                            <div className="flex justify-between py-3 mt-4 font-bold text-gray-900 text-lg border-t-2 border-gray-400">
+                                <span>Flujo de Caja Neto de Operaciones</span>
+                                <span>${reportData.operatingActivities.net.toFixed(2)}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
 };
+
 export default CashFlowStatement;

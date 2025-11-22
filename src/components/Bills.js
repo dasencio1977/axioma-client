@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Invoices.css';
-import './Bills.css';
+// Eliminamos la importación de './Invoices.css' y './Bills.css'
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
+
+// Componente interno para los Badges de Estado
+const StatusBadge = ({ status }) => {
+    const statusClasses = {
+        'Pagada': 'bg-green-100 text-green-800',
+        'Pendiente': 'bg-yellow-100 text-yellow-800',
+        'Vencida': 'bg-red-100 text-red-800',
+        'Anulada': 'bg-gray-700 text-white',
+    };
+    const classes = statusClasses[status] || 'bg-gray-100 text-gray-800';
+    return (
+        <span className={`py-1 px-3 rounded-full text-xs font-medium ${classes}`}>
+            {status}
+        </span>
+    );
+};
 
 const Bills = () => {
     const [bills, setBills] = useState([]);
@@ -36,7 +52,6 @@ const Bills = () => {
         fetchBills(currentPage);
     }, [currentPage]);
 
-    // --- FUNCIÓN handleDelete CORREGIDA ---
     const handleDelete = (billId) => {
         const performDelete = async () => {
             try {
@@ -47,7 +62,7 @@ const Bills = () => {
                 });
                 toast.success('Factura por pagar eliminada.');
                 if (bills.length === 1 && currentPage > 1) {
-                    setCurrentPage(currentPage - 1);
+                    fetchBills(currentPage - 1);
                 } else {
                     fetchBills(currentPage);
                 }
@@ -55,20 +70,14 @@ const Bills = () => {
                 toast.error(err.message);
             }
         };
-
-        // Lógica de confirmación con toast restaurada
         const ConfirmationToast = ({ closeToast }) => (
             <div>
                 <p>¿Seguro que quieres eliminar esta factura?</p>
-                <button onClick={() => { performDelete(); closeToast(); }}>Sí, eliminar</button>
-                <button onClick={closeToast}>Cancelar</button>
+                <button onClick={() => { performDelete(); closeToast(); }} className="mr-2 py-1 px-3 bg-red-600 text-white rounded-md">Sí</button>
+                <button onClick={closeToast} className="py-1 px-3 bg-gray-200 text-gray-700 rounded-md">No</button>
             </div>
         );
-
-        toast.warn(<ConfirmationToast />, {
-            closeOnClick: false,
-            autoClose: false,
-        });
+        toast.warn(<ConfirmationToast />, { closeOnClick: false, autoClose: false });
     };
 
     const formatDate = (dateString) => {
@@ -77,56 +86,63 @@ const Bills = () => {
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    const getStatusClass = (status) => `status-${status}`;
-
     if (loading) return <p>Cargando facturas por pagar...</p>;
 
     return (
         <div>
-            <h2 className="page-header-with-icon">
-                <img src="/axioma-icon.png" alt="Axioma Icon" className="page-icon" />
-                Facturas por Pagar</h2>
-            <div className="bills-toolbar">
-                <p>Gestiona las facturas de tus suplidores.</p>
-                <button onClick={() => navigate('/bills/new')} className="btn-primary">Añadir Factura</button>
+            <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
+                <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                Facturas por Pagar
+            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <p className="text-gray-600">Gestiona las facturas de tus suplidores.</p>
+                <button onClick={() => navigate('/bills/new')} className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors">
+                    Añadir Factura
+                </button>
             </div>
-            <div className="table-container">
-                <table>
-                    <thead>
+            <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+                <table className="w-full min-w-[600px]">
+                    <thead className="bg-gray-100 border-b border-gray-200">
                         <tr>
-                            <th>Nº Factura</th>
-                            <th>Suplidor</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th>Vencimiento</th>
-                            <th>Acciones</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Nº Factura</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Suplidor</th>
+                            <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                            <th className="p-4 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Vencimiento</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-200">
                         {bills.map((bill) => (
-                            <tr key={bill.bill_id}>
-                                <td>{bill.bill_number}</td>
-                                <td>{bill.vendor_name || '--'}</td>
-                                <td>${parseFloat(bill.total_amount).toFixed(2)}</td>
-                                <td>
-                                    <span className={`status-badge ${getStatusClass(bill.status)}`}>
-                                        {bill.status}
-                                    </span>
+                            <tr key={bill.bill_id} className="hover:bg-gray-50">
+                                <td className="p-4 whitespace-nowrap text-gray-700">{bill.bill_number}</td>
+                                <td className="p-4 whitespace-nowrap text-gray-700">{bill.vendor_name || '--'}</td>
+                                <td className="p-4 whitespace-nowrap text-gray-700 text-right">${parseFloat(bill.total_amount).toFixed(2)}</td>
+                                <td className="p-4 whitespace-nowrap text-center">
+                                    <StatusBadge status={bill.status} />
                                 </td>
-                                <td>{formatDate(bill.due_date)}</td>
-                                <td className="actions-cell">
-                                    <button className="btn-edit" onClick={() => navigate(`/bills/edit/${bill.bill_id}`)}>Editar</button>
-                                    <button className="btn-delete" onClick={() => handleDelete(bill.bill_id)}>Eliminar</button>
+                                <td className="p-4 whitespace-nowrap text-gray-700">{formatDate(bill.due_date)}</td>
+                                <td className="p-4 whitespace-nowrap">
+                                    <div className="flex gap-2">
+                                        <button className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600" onClick={() => navigate(`/bills/edit/${bill.bill_id}`)}>Editar</button>
+                                        <button className="py-1 px-3 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700" onClick={() => handleDelete(bill.bill_id)}>Eliminar</button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            <div className="pagination-container" style={{ marginTop: '20px' }}>
-                <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} className="pagination-button">Anterior</button>
-                <span className="pagination-text"> Página {currentPage} de {totalPages} </span>
-                <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage >= totalPages} className="pagination-button">Siguiente</button>
+            <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
+                <div></div> {/* Div vacío para empujar */}
+                <div className="text-sm text-gray-700 font-medium">
+                    <span> Página {currentPage} de {totalPages} </span>
+                </div>
+                <div>
+                    <button onClick={() => fetchBills(currentPage - 1)} disabled={currentPage === 1} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed">Anterior</button>
+                    <button onClick={() => fetchBills(currentPage + 1)} disabled={currentPage >= totalPages} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed ml-2">Siguiente</button>
+
+                </div>
             </div>
         </div>
     );

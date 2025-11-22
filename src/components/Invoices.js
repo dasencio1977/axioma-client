@@ -1,9 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Invoices.css';
+import Papa from 'papaparse';
+// Eliminamos la importación de './Invoices.css'
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
+
+// Componente interno para los Badges de Estado (ya refactorizado)
+const StatusBadge = ({ status }) => {
+    const statusClasses = {
+        'Pagada': 'bg-green-100 text-green-800',
+        'Parcialmente Pagada': 'bg-yellow-100 text-yellow-800',
+        'Enviada': 'bg-blue-100 text-blue-800',
+        'Vencida': 'bg-red-100 text-red-800',
+        'Borrador': 'bg-gray-100 text-gray-800',
+        'Anulada': 'bg-gray-700 text-white',
+    };
+    const normalizedStatus = status.startsWith('Parcialmente') ? 'Parcialmente Pagada' : status;
+    const classes = statusClasses[normalizedStatus] || 'bg-gray-100 text-gray-800';
+    return (
+        <span className={`py-1 px-3 rounded-full text-xs font-medium ${classes}`}>
+            {status}
+        </span>
+    );
+};
 
 const Invoices = () => {
     const [invoices, setInvoices] = useState([]);
@@ -16,19 +37,7 @@ const Invoices = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    useEffect(() => {
-        const status = searchParams.get('status');
-        if (status) {
-            setStatusFilter(status);
-        }
-    }, [searchParams]);
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString(undefined, options);
-    };
-
+    // --- LÓGICA DE DATOS ---
     const fetchInvoices = async (page, currentLimit) => {
         setLoading(true);
         const token = localStorage.getItem('token');
@@ -48,44 +57,46 @@ const Invoices = () => {
         }
     };
 
+    useEffect(() => {
+        const status = searchParams.get('status');
+        if (status) setStatusFilter(status);
+    }, [searchParams]);
 
     useEffect(() => {
         fetchInvoices(currentPage, limit);
     }, [currentPage, limit]);
 
+    // --- LÓGICA COMPLETA DE handleDelete ---
     const handleDelete = (invoiceId) => {
         const performDelete = async () => {
+            const token = localStorage.getItem('token');
             try {
-                const token = localStorage.getItem('token');
                 await fetch(`${apiUrl}/api/invoices/${invoiceId}`, {
                     method: 'DELETE',
                     headers: { 'x-auth-token': token },
                 });
                 toast.success('Factura eliminada con éxito');
-                fetchInvoices();
+                fetchInvoices(1, limit); // Recargar desde la página 1
             } catch (err) {
                 toast.error('Error al eliminar la factura.');
             }
         };
-
         const ConfirmationToast = ({ closeToast }) => (
             <div>
                 <p>¿Seguro que quieres eliminar esta factura?</p>
-                <button onClick={() => { performDelete(); closeToast(); }}>Sí</button>
-                <button onClick={closeToast}>No</button>
+                <button onClick={() => { performDelete(); closeToast(); }} className="mr-2 py-1 px-3 bg-red-600 text-white rounded-md">Sí</button>
+                <button onClick={closeToast} className="py-1 px-3 bg-gray-200 text-gray-700 rounded-md">No</button>
             </div>
         );
+        toast.warn(<ConfirmationToast />, { closeOnClick: false, autoClose: false });
+    };
 
-        toast.warn(<ConfirmationToast />, {
-            closeOnClick: false,
-            autoClose: false,
-        });
-
-    }; const handleDownload = async (invoiceId, invoiceNumber) => {
+    // --- LÓGICA COMPLETA DE handleDownload ---
+    const handleDownload = async (invoiceId, invoiceNumber) => {
         const token = localStorage.getItem('token');
         try {
             toast.info('Generando PDF...');
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/invoices/${invoiceId}/pdf`, {
+            const res = await fetch(`${apiUrl}/api/invoices/${invoiceId}/pdf`, {
                 headers: { 'x-auth-token': token },
             });
             if (!res.ok) throw new Error('No se pudo generar el PDF.');
@@ -118,19 +129,7 @@ const Invoices = () => {
 
     const handleFilterClick = (status) => {
         setStatusFilter(status);
-        setSearchParams({ status: status }); // Actualizamos la URL
-    };
-    const statusFilteredInvoices = useMemo(() => {
-        return filteredInvoices.filter(invoice => {
-            if (statusFilter === 'Todos') return true;
-            if (statusFilter === 'Pendiente') return ['Enviada', 'Vencida', 'Parcialmente Pagada'].includes(invoice.status);
-            return invoice.status === statusFilter;
-        });
-    }, [filteredInvoices, statusFilter]);
-
-    const getStatusClass = (status) => {
-        const normalizedStatus = status.startsWith('Parcialmente') ? 'Parcialmente' : status;
-        return `status-${normalizedStatus}`;
+        setSearchParams({ status: status });
     };
 
     const handleLimitChange = (e) => {
@@ -139,102 +138,129 @@ const Invoices = () => {
         setCurrentPage(1);
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
     if (loading) return <p>Cargando facturas...</p>;
 
+    // --- JSX (SIN CAMBIOS, YA ESTÁ REFACTORIZADO) ---
     return (
         <div>
-            <h2 className="page-header-with-icon">
-                <img src="/axioma-icon.png" alt="Axioma Icon" className="page-icon" />
-                <h2>Facturas</h2>
+            <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
+                <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                Mis Facturas
             </h2>
 
-            <div className="invoice-toolbar">
-                {/* 1. Nuevo contenedor para filtros y búsqueda */}
-                <div className="filters-and-search">
-                    <div className="invoice-filters">
-                        <button onClick={() => setStatusFilter('Todos')} className={statusFilter === 'Todos' ? 'active' : ''}>Todos</button>
-                        <button onClick={() => setStatusFilter('Pendiente')} className={statusFilter === 'Pendiente' ? 'active' : ''}>Pendientes</button>
-                        <button onClick={() => setStatusFilter('Pagada')} className={statusFilter === 'Pagada' ? 'active' : ''}>Pagadas</button>
-                        <button onClick={() => handleFilterClick('Vencida')} className={statusFilter === 'Vencida' ? 'active' : ''}>Vencidas</button>
-                        <button onClick={() => setStatusFilter('Borrador')} className={statusFilter === 'Borrador' ? 'active' : ''}>Borrador</button>
-
-                        <input
-                            type="text"
-                            className="search-input"
-                            placeholder="Buscar..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        /></div>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <div className="flex-shrink-0 bg-white rounded-lg shadow-sm p-1 flex gap-1">
+                        <button onClick={() => handleFilterClick('Todos')} className={`py-1.5 px-3 rounded-md text-sm font-medium ${statusFilter === 'Todos' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Todos</button>
+                        <button onClick={() => handleFilterClick('Pendiente')} className={`py-1.5 px-3 rounded-md text-sm font-medium ${statusFilter === 'Pendiente' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Pendientes</button>
+                        <button onClick={() => handleFilterClick('Pagada')} className={`py-1.5 px-3 rounded-md text-sm font-medium ${statusFilter === 'Pagada' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Pagadas</button>
+                        <button onClick={() => handleFilterClick('Vencida')} className={`py-1.5 px-3 rounded-md text-sm font-medium ${statusFilter === 'Vencida' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>Vencidas</button>
+                    </div>
+                    <input
+                        type="text"
+                        className="px-4 py-2 border border-gray-300 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Buscar por Nº, cliente..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-
-                {/* Botón de Crear se mantiene a la derecha */}
                 <button
-                    className="btn-primary"
+                    className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors w-full md:w-auto flex-shrink-0"
                     onClick={() => navigate('/invoices/new')}>
                     Crear Nueva Factura
                 </button>
             </div>
 
-            <hr />
+            <hr className="my-6 border-gray-200" />
 
-            {/* --- ESTE ES EL BLOQUE CORREGIDO --- */}
             {invoices.length === 0 && !loading ? (
-                <div className="empty-state">
-                    <h3>No tienes facturas todavía</h3>
-                    <p>¡Empieza creando tu primera factura ahora!</p>
-                    <button onClick={() => navigate('/invoices/new')} className="btn-primary">Crear Nueva Factura</button>
+                <div className="text-center p-12 border-2 border-dashed border-gray-300 rounded-xl">
+                    <h3 className="text-xl font-semibold text-gray-700">No tienes facturas todavía</h3>
+                    <p className="text-gray-500 mt-2 mb-4">¡Empieza creando tu primera factura ahora!</p>
+                    <button onClick={() => navigate('/invoices/new')} className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700">
+                        Crear Nueva Factura
+                    </button>
                 </div>
-            ) : statusFilteredInvoices.length === 0 ? (
-                <p>No se encontraron facturas que coincidan con tus filtros.</p>
+            ) : filteredInvoices.length === 0 ? (
+                <p className="text-center text-gray-600 py-8">No se encontraron facturas que coincidan con tus filtros.</p>
             ) : (
                 <>
-                    <div className="table-container">
-                        <table>
-                            <thead>
+                    <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+                        <table className="w-full min-w-[768px]">
+                            <thead className="bg-gray-100 border-b border-gray-200">
                                 <tr>
-                                    <th>Nº Factura</th>
-                                    <th>Cliente</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                    <th>Vencimiento</th>
-                                    <th>Acciones</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Nº Factura</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Cliente</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Saldo Pendiente</th>
+                                    <th className="p-4 text-center text-sm font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Vencimiento</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {statusFilteredInvoices.map((invoice) => (
-                                    <tr key={invoice.invoice_id}>
-                                        <td>{invoice.invoice_number}</td>
-                                        <td>{invoice.client_name}</td>
-                                        <td>${parseFloat(invoice.total_amount).toLocaleString('es-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                        <td><span className={`status-badge ${getStatusClass(invoice.status)}`}>{invoice.status}</span></td>
-                                        <td>{formatDate(invoice.due_date)}</td>
-                                        <td className="actions-cell">
-                                            <button className="btn-view" onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}>Ver</button>
-                                            <button className="btn-edit" onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar</button>
-                                            <button className="btn-pdf" onClick={() => handleDownload(invoice.invoice_id, invoice.invoice_number)}>PDF</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(invoice.invoice_id)}>Eliminar</button>
-                                        </td>
-                                    </tr>
-                                ))}
+                            <tbody className="divide-y divide-gray-200">
+                                {filteredInvoices.map((invoice) => {
+                                    const balanceDue = parseFloat(invoice.total_amount) - parseFloat(invoice.amount_paid);
+                                    return (
+                                        <tr key={invoice.invoice_id} className="hover:bg-gray-50">
+                                            <td className="p-4 whitespace-nowrap text-gray-700 font-medium">{invoice.invoice_number}</td>
+                                            <td className="p-4 whitespace-nowrap text-gray-700">{invoice.client_name}</td>
+                                            <td className="p-4 whitespace-nowrap text-gray-700 text-right">${parseFloat(invoice.total_amount).toLocaleString('es-US', { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-4 whitespace-nowrap text-gray-900 font-bold text-right">${balanceDue.toLocaleString('es-US', { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-4 whitespace-nowrap text-center">
+                                                <StatusBadge status={invoice.status} />
+                                            </td>
+                                            <td className="p-4 whitespace-nowrap text-gray-700">{formatDate(invoice.due_date)}</td>
+                                            <td className="p-4 whitespace-nowrap">
+                                                <div className="flex gap-2">
+                                                    <button className="py-1 px-3 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600" onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}>Ver</button>
+                                                    <button className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600" onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar</button>
+                                                    <button className="py-1 px-3 bg-cyan-500 text-white rounded-md text-sm font-medium hover:bg-cyan-600" onClick={() => handleDownload(invoice.invoice_id, invoice.invoice_number)}>PDF</button>
+                                                    <button className="py-1 px-3 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700" onClick={() => handleDelete(invoice.invoice_id)}>Eliminar</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                    <div className="pagination-container">
+
+                    <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
                         <div>
-                            <label htmlFor="limit-select">Items por página: </label>
-                            <select id="limit-select" className="items-per-page-select" value={limit} onChange={handleLimitChange}>
+                            <label htmlFor="limit-select" className="text-sm text-gray-700 mr-2">Items por página:</label>
+                            <select id="limit-select" value={limit} onChange={handleLimitChange}
+                                className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="20">20</option>
                                 <option value="50">50</option>
                             </select>
                         </div>
-                        <div className="pagination-text">
-                            <span>Página {currentPage} de {totalPages}</span>
+                        <div className="text-sm text-gray-700 font-medium">
+                            Página {currentPage} de {totalPages}
                         </div>
-                        <div>
-                            <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} className="pagination-button">Anterior</button>
-                            <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage >= totalPages} className="pagination-button">Siguiente</button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => fetchInvoices(currentPage - 1, limit)}
+                                disabled={currentPage === 1}
+                                className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                Anterior
+                            </button>
+                            <button
+                                onClick={() => fetchInvoices(currentPage + 1, limit)}
+                                disabled={currentPage >= totalPages}
+                                className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                Siguiente
+                            </button>
                         </div>
                     </div>
                 </>

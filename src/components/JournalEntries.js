@@ -1,8 +1,8 @@
-// client/src/components/JournalEntries.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Invoices.css'; // Reutilizamos estilos
+// Eliminamos la importación de './Invoices.css'
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -24,6 +24,7 @@ const JournalEntries = () => {
             const data = await response.json();
             setEntries(data.entries);
             setTotalPages(data.totalPages);
+            setCurrentPage(data.currentPage);
         } catch (err) {
             toast.error(err.message);
         } finally {
@@ -45,42 +46,59 @@ const JournalEntries = () => {
 
     return (
         <div>
-            <h2 className="page-header-with-icon">
-                <img src="/axioma-icon.png" alt="Axioma Icon" className="page-icon" />
-                Diario General - Asientos Contables</h2>
-            <div className="invoice-toolbar">
-                <p>Registra transacciones contables manuales.</p>
-                <button onClick={() => navigate('/journal-entries/new')} className="btn-primary">
+            <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
+                <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                Diario General - Asientos Contables
+            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <p className="text-gray-600">Registra transacciones contables manuales.</p>
+                <button onClick={() => navigate('/journal-entries/new')}
+                    className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors">
                     Añadir Asiento
                 </button>
             </div>
-            <div className="table-container">
-                <table>
-                    <thead>
+            <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+                <table className="w-full min-w-[600px]">
+                    <thead className="bg-gray-100 border-b border-gray-200">
                         <tr>
-                            <th>Fecha</th>
-                            <th>Descripción</th>
-                            <th>Acciones</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Descripción</th>
+                            <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-200">
                         {entries.map((entry) => (
-                            <tr key={entry.entry_id}>
-                                <td>{formatDate(entry.entry_date)}</td>
-                                <td>{entry.description}</td>
-                                <td className="actions-cell">
-                                    <button className="btn-view" onClick={() => navigate(`/journal-entries/${entry.entry_id}`)}>Ver</button>
-                                    <button className="btn-edit" onClick={() => navigate(`/journal-entries/edit/${entry.entry_id}`)}>Editar</button>
+                            <tr key={entry.entry_id} className="hover:bg-gray-50">
+                                <td className="p-4 whitespace-nowrap text-gray-700">{formatDate(entry.entry_date)}</td>
+                                <td className="p-4 whitespace-nowrap text-gray-700">{entry.description}</td>
+                                <td className="p-4 whitespace-nowrap">
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="py-1 px-3 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600"
+                                            onClick={() => navigate(`/journal-entries/${entry.entry_id}`)}>
+                                            Ver
+                                        </button>
+                                        <button
+                                            className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600"
+                                            onClick={() => navigate(`/journal-entries/edit/${entry.entry_id}`)}>
+                                            Editar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            <div className="pagination-container">
-                <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} className="pagination-button">Anterior</button>
-                <span className="pagination-text"> Página {currentPage} de {totalPages} </span>
-                <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage >= totalPages} className="pagination-button">Siguiente</button>
+            <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
+                <div></div>
+                <div className="text-sm text-gray-700 font-medium">
+                    <span> Página {currentPage} de {totalPages} </span>
+                </div>
+                <div>
+                    <button onClick={() => fetchEntries(currentPage - 1)} disabled={currentPage === 1} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed">Anterior</button>
+                    <button onClick={() => fetchEntries(currentPage + 1)} disabled={currentPage >= totalPages} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed ml-2">Siguiente</button>
+                </div>
             </div>
         </div>
     );

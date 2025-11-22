@@ -1,8 +1,8 @@
-// client/src/components/Products.js
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import ProductForm from './ProductForm';
-import './Invoices.css'; // Reutilizamos muchos estilos
+// Eliminamos la importación de './Invoices.css'
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -23,6 +23,7 @@ const Products = () => {
             const data = await response.json();
             setProducts(data.products);
             setTotalPages(data.totalPages);
+            setCurrentPage(data.currentPage); // Sincronizar
         } catch (err) {
             toast.error(err.message);
         } finally {
@@ -33,32 +34,17 @@ const Products = () => {
     useEffect(() => { fetchProducts(currentPage); }, [currentPage]);
 
     const handleSave = async (productData) => {
-        const cleanData = {
-            ...productData,
-            price: parseFloat(productData.price) || 0,
-            cost: parseFloat(productData.cost) || 0,
-        };
-
         const token = localStorage.getItem('token');
         const method = editingProduct ? 'PUT' : 'POST';
-
-        // LA CORRECCIÓN: Añadimos la URL completa del backend también para la creación.
-        const url = editingProduct
-            ? `${apiUrl}/api/products/${editingProduct.product_id}`
-            : `${apiUrl}/api/products`; // <-- Aquí estaba el error
-
+        const url = editingProduct ? `${apiUrl}/api/products/${editingProduct.product_id}` : `${apiUrl}/api/products`;
         try {
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                body: JSON.stringify(cleanData),
+                body: JSON.stringify(productData),
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.msg || 'Error al guardar el producto.');
-            }
-
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.msg || 'Error al guardar el producto.');
             toast.success('Producto guardado.');
             fetchProducts(1);
             setShowForm(false);
@@ -67,11 +53,14 @@ const Products = () => {
             toast.error(err.message);
         }
     };
+
     const handleDelete = (productId) => {
         const performDelete = async () => {
+            const token = localStorage.getItem('token');
             try {
-                const token = localStorage.getItem('token');
-                await fetch(`${apiUrl}/api/products/${productId}`, { method: 'DELETE', headers: { 'x-auth-token': token } });
+                const response = await fetch(`${apiUrl}/api/products/${productId}`, { method: 'DELETE', headers: { 'x-auth-token': token } });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.msg || 'Error al eliminar el producto.');
                 toast.success('Producto eliminado.');
                 fetchProducts(1);
             } catch (err) {
@@ -81,8 +70,8 @@ const Products = () => {
         const ConfirmationToast = ({ closeToast }) => (
             <div>
                 <p>¿Seguro que quieres eliminar este producto?</p>
-                <button onClick={() => { performDelete(); closeToast(); }}>Sí</button>
-                <button onClick={closeToast}>No</button>
+                <button onClick={() => { performDelete(); closeToast(); }} className="mr-2 py-1 px-3 bg-red-600 text-white rounded-md">Sí</button>
+                <button onClick={closeToast} className="py-1 px-3 bg-gray-200 text-gray-700 rounded-md">No</button>
             </div>
         );
         toast.warn(<ConfirmationToast />, { closeOnClick: false, autoClose: false });
@@ -93,42 +82,58 @@ const Products = () => {
     if (loading) return <p>Cargando...</p>;
 
     return (
-        <div><h2 className="page-header-with-icon">
-            <img src="/axioma-icon.png" alt="Axioma Icon" className="page-icon" />
-            <h2>Productos y Servicios</h2>
-        </h2>
-
-            <div className="invoice-toolbar">
-                <p>Gestiona tu catálogo de items para facturación y gastos.</p>
-                {!showForm && <button onClick={() => { setEditingProduct(null); setShowForm(true); }} className="btn-primary">Añadir Producto</button>}
+        <div>
+            <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
+                <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                Productos y Servicios
+            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <p className="text-gray-600">Gestiona tu catálogo de items para facturación y gastos.</p>
+                {!showForm && <button onClick={() => { setEditingProduct(null); setShowForm(true); }} className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors">Añadir Producto</button>}
             </div>
             {showForm && <ProductForm onSave={handleSave} onCancel={() => setShowForm(false)} currentProduct={editingProduct} />}
             {!showForm && (
                 <>
-                    <div className="table-container">
-                        <table>
-                            <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Precio</th><th>Costo</th><th>Acciones</th></tr></thead>
-                            <tbody>
+                    <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+                        <table className="w-full min-w-[600px]">
+                            <thead className="bg-gray-100 border-b border-gray-200">
+                                <tr>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Código</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Nombre</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Precio</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Costo</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
                                 {products.map((product) => (
-                                    <tr key={product.product_id}>
-                                        <td>{product.code}</td>
-                                        <td>{product.name}</td>
-                                        <td>{product.product_type}</td>
-                                        <td>${parseFloat(product.price).toFixed(2)}</td>
-                                        <td>${parseFloat(product.cost).toFixed(2)}</td>
-                                        <td className="actions-cell">
-                                            <button className="btn-edit" onClick={() => handleEdit(product)}>Editar</button>
-                                            <button className="btn-delete" onClick={() => handleDelete(product.product_id)}>Eliminar</button>
+                                    <tr key={product.product_id} className="hover:bg-gray-50">
+                                        <td className="p-4 whitespace-nowrap text-gray-700 font-medium">{product.code}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{product.name}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{product.product_type}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700 text-right">${parseFloat(product.price).toFixed(2)}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700 text-right">${parseFloat(product.cost).toFixed(2)}</td>
+                                        <td className="p-4 whitespace-nowrap">
+                                            <div className="flex gap-2">
+                                                <button className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600" onClick={() => handleEdit(product)}>Editar</button>
+                                                <button className="py-1 px-3 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700" onClick={() => handleDelete(product.product_id)}>Eliminar</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    <div className="pagination-container">
-                        <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} className="pagination-button">Anterior</button>
-                        <span> Página {currentPage} de {totalPages} </span>
-                        <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage >= totalPages} className="pagination-button">Siguiente</button>
+                    <div className="flex justify-between items-center mt-6 p-4 bg-white rounded-xl shadow-lg">
+                        <div></div>
+                        <div className="text-sm text-gray-700 font-medium">
+                            <span> Página {currentPage} de {totalPages} </span>
+                        </div>
+                        <div>
+                            <button onClick={() => fetchProducts(currentPage - 1)} disabled={currentPage === 1} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed">Anterior</button>
+                            <button onClick={() => fetchProducts(currentPage + 1)} disabled={currentPage >= totalPages} className="py-2 px-4 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed ml-2">Siguiente</button>
+                        </div>
                     </div>
                 </>
             )}

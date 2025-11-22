@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Papa from 'papaparse';
-import './Invoices.css';
-import './Reports.css';
+// Eliminamos la importación de './Invoices.css' y './Reports.css'
+import axiomaIcon from '../assets/axioma-icon.png'; // Importamos el ícono
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -91,38 +91,70 @@ const ProfitLossReport = () => {
 
     return (
         <div>
+            {/* --- Encabezado --- */}
             {profile && (
-                <div className="report-header">
-                    <h2>{profile.company_name}</h2>
-                    <h3>Reporte de Ganancias y Pérdidas</h3>
+                <div className="mb-6">
+                    <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-2">
+                        <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                        Reporte de Ganancias y Pérdidas
+                    </h2>
+                    <h3 className="text-xl text-gray-600">{profile.company_name}</h3>
                 </div>
             )}
-            <form onSubmit={handlePlSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <div className='form-group'>
-                    <label>Desde:</label>
-                    <input type="date" name="startDate" value={plDates.startDate} onChange={(e) => setPlDates({ ...plDates, startDate: e.target.value })} required />
+
+            {/* --- Formulario de Fecha --- */}
+            <form onSubmit={handlePlSubmit} className="flex flex-col sm:flex-row items-center gap-4 mb-4 p-4 bg-white rounded-xl shadow-lg">
+                <div className="flex items-center gap-2">
+                    <label htmlFor="startDate" className="text-sm font-bold text-gray-700">Desde:</label>
+                    <input type="date" name="startDate" id="startDate" value={plDates.startDate} onChange={(e) => setPlDates({ ...plDates, startDate: e.target.value })} required
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div className='form-group'>
-                    <label>Hasta:</label>
-                    <input type="date" name="endDate" value={plDates.endDate} onChange={(e) => setPlDates({ ...plDates, endDate: e.target.value })} required />
+                <div className="flex items-center gap-2">
+                    <label htmlFor="endDate" className="text-sm font-bold text-gray-700">Hasta:</label>
+                    <input type="date" name="endDate" id="endDate" value={plDates.endDate} onChange={(e) => setPlDates({ ...plDates, endDate: e.target.value })} required
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <button type="submit" disabled={plLoading} className="btn-primary">{plLoading ? 'Generando...' : 'Generar Reporte'}</button>
+                <button type="submit" disabled={plLoading}
+                    className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:bg-gray-400">
+                    {plLoading ? 'Generando...' : 'Generar Reporte'}
+                </button>
             </form>
-            {plReportData &&
-                <div className="report-actions" style={{ display: 'flex', gap: '10px' }}>
-                    <button className="btn-secondary" onClick={() => handleExport('csv')}>Exportar a Excel</button>
-                    <button className="btn-secondary" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
-                </div>}
-            {plLoading && <p>Generando reporte...</p>}
+
+            {/* --- Botones de Acción y Resultados --- */}
+            {plLoading && <p className="text-center text-gray-600 mt-4">Generando reporte...</p>}
+
             {plReportData && (
-                <div className="report-results" style={{ marginTop: '20px' }}>
-                    <h4>Resultados para el período del {new Date(plReportData.startDate).toLocaleDateString()} al {new Date(plReportData.endDate).toLocaleDateString()}</h4>
-                    <p><strong>Total de Ingresos:</strong> <span style={{ color: 'green' }}>${plReportData.totalIncome.toFixed(2)}</span></p>
-                    <p><strong>Total de Gastos:</strong> <span style={{ color: 'red' }}>${plReportData.totalExpenses.toFixed(2)}</span></p>
-                    <p><strong>Ganancia Neta:</strong> <strong>${plReportData.netProfit.toFixed(2)}</strong></p>
-                </div>
+                <>
+                    <div className="flex gap-2 my-4">
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('csv')}>Exportar a Excel</button>
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            Resultados para el período del {new Date(plReportData.startDate).toLocaleDateString()} al {new Date(plReportData.endDate).toLocaleDateString()}
+                        </h4>
+
+                        <div className="max-w-md space-y-3">
+                            <div className="flex justify-between text-lg">
+                                <span className="font-medium text-gray-700">Total de Ingresos:</span>
+                                <span className="font-bold text-green-600">${plReportData.totalIncome.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-lg">
+                                <span className="font-medium text-gray-700">Total de Gastos:</span>
+                                <span className="font-bold text-red-600">(${plReportData.totalExpenses.toFixed(2)})</span>
+                            </div>
+                            <hr className="my-2" />
+                            <div className="flex justify-between text-xl font-bold text-gray-900 border-t-2 border-gray-300 pt-3">
+                                <span>Ganancia Neta:</span>
+                                <span>${plReportData.netProfit.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );
 };
+
 export default ProfitLossReport;

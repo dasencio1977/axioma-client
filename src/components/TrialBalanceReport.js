@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Papa from 'papaparse';
-import './Invoices.css';
+// Eliminamos la importación de './Invoices.css'
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -96,33 +97,81 @@ const TrialBalanceReport = () => {
 
     return (
         <div>
-            {profile && <div className="report-header"><h2>{profile.company_name}</h2><h3>Balance de Comprobación</h3></div>}
-            <form onSubmit={handleTbSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-                <div className='form-group'>
-                    <label>Hasta la fecha:</label>
-                    <input type="date" name="asOfDate" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} required />
+            {/* --- Encabezado --- */}
+            {profile && (
+                <div className="mb-6">
+                    <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-2">
+                        <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                        Balance de Comprobación
+                    </h2>
+                    <h3 className="text-xl text-gray-600">{profile.company_name}</h3>
                 </div>
-                <button type="submit" disabled={tbLoading} className="btn-primary">{tbLoading ? 'Generando...' : 'Generar Balance'}</button>
+            )}
+
+            {/* --- Formulario de Fecha --- */}
+            <form onSubmit={handleTbSubmit} className="flex flex-col sm:flex-row items-center gap-4 mb-4 p-4 bg-white rounded-xl shadow-lg">
+                <div className="flex items-center gap-2">
+                    <label htmlFor="asOfDate" className="text-sm font-bold text-gray-700">Hasta la fecha:</label>
+                    <input type="date" name="asOfDate" id="asOfDate" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} required
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <button type="submit" disabled={tbLoading}
+                    className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:bg-gray-400">
+                    {tbLoading ? 'Generando...' : 'Generar Balance'}
+                </button>
             </form>
-            {trialBalanceData &&
-                <div className="report-actions" style={{ display: 'flex', gap: '10px' }}>
-                    <button className="btn-secondary" onClick={() => handleExport('csv')}>Exportar a Excel</button>
-                    <button className="btn-secondary" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
-                </div>}
-            {tbLoading && <p>Calculando balances...</p>}
+
+            {/* --- Botones de Acción y Resultados --- */}
+            {tbLoading && <p className="text-center text-gray-600 mt-4">Calculando balances...</p>}
+
             {trialBalanceData && (
-                <div className="table-container" style={{ marginTop: '20px' }}>
-                    <h4>Balance al {new Date(asOfDate).toLocaleDateString()}</h4>
-                    <table>
-                        <thead><tr><th>Nº Cuenta</th><th>Nombre de Cuenta</th><th style={{ textAlign: 'right' }}>Débitos</th><th style={{ textAlign: 'right' }}>Créditos</th></tr></thead>
-                        <tbody>{trialBalanceData.map(acc => (<tr key={acc.account_id}><td>{acc.account_number}</td><td>{acc.account_name}</td><td style={{ textAlign: 'right' }}>${acc.debit_balance.toFixed(2)}</td><td style={{ textAlign: 'right' }}>${acc.credit_balance.toFixed(2)}</td></tr>))}</tbody>
-                        <tfoot><tr style={{ fontWeight: 'bold', borderTop: '2-px solid #333' }}><td colSpan="2" style={{ textAlign: 'right' }}>Totales:</td><td style={{ textAlign: 'right' }}>${trialBalanceTotals.debits.toFixed(2)}</td><td style={{ textAlign: 'right' }}>${trialBalanceTotals.credits.toFixed(2)}</td></tr>
-                            {trialBalanceTotals.debits.toFixed(2) !== trialBalanceTotals.credits.toFixed(2) && (<tr><td colSpan="4" style={{ color: 'red', textAlign: 'center' }}>¡LOS TOTALES NO CUADRAN!</td></tr>)}
-                        </tfoot>
-                    </table>
-                </div>
+                <>
+                    <div className="flex gap-2 my-4">
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('csv')}>Exportar a Excel</button>
+                        <button className="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300" onClick={() => handleExport('pdf')}>Exportar a PDF</button>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+                        <h4 className="text-lg font-semibold text-gray-800 p-4">
+                            Balance al {new Date(asOfDate).toLocaleDateString()}
+                        </h4>
+                        <table className="w-full min-w-[600px]">
+                            <thead className="bg-gray-100 border-b border-gray-200">
+                                <tr>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Nº Cuenta</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Nombre de Cuenta</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Débitos</th>
+                                    <th className="p-4 text-right text-sm font-semibold text-gray-600 uppercase tracking-wider">Créditos</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {trialBalanceData.map(acc => (
+                                    <tr key={acc.account_id} className="hover:bg-gray-50">
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{acc.account_number}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{acc.account_name}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700 text-right">${acc.debit_balance.toFixed(2)}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700 text-right">${acc.credit_balance.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-gray-50">
+                                <tr className="font-bold text-gray-900 border-t-2 border-gray-300">
+                                    <td colSpan="2" className="p-4 text-right uppercase">Totales:</td>
+                                    <td className="p-4 text-right">${trialBalanceTotals.debits.toFixed(2)}</td>
+                                    <td className="p-4 text-right">${trialBalanceTotals.credits.toFixed(2)}</td>
+                                </tr>
+                                {trialBalanceTotals.debits.toFixed(2) !== trialBalanceTotals.credits.toFixed(2) && (
+                                    <tr className="bg-red-100">
+                                        <td colSpan="4" className="p-4 text-center text-red-700 font-bold">¡LOS TOTALES NO CUADRAN!</td>
+                                    </tr>
+                                )}
+                            </tfoot>
+                        </table>
+                    </div>
+                </>
             )}
         </div>
     );
 };
+
 export default TrialBalanceReport;
