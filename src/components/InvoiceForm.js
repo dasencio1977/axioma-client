@@ -36,7 +36,9 @@ const InvoiceForm = () => {
                 const clientsData = await clientsRes.json();
                 const productsData = await productsRes.json();
                 const profileData = await profileRes.json();
-                setClients(clientsData.clients || []);
+
+                // FIX: Handle clientsData as array (from ?all=true) or object (paginated)
+                setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
                 setProducts(productsData || []);
                 setProfile(profileData);
 
@@ -166,6 +168,8 @@ const InvoiceForm = () => {
                             <option value="Enviada">Enviada</option>
                             <option value="Vencida">Vencida</option>
                             <option value="Anulada">Anulada</option>
+                            <option value="Pagada">Pagada</option>
+                            <option value="Parcial">Parcialmente Pagada</option>
                         </select>
                     </div>
                     <div className="md:col-span-2"></div>
