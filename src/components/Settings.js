@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-// Eliminamos la importación de './ClientForm.css' y './Settings.css'
-import axiomaIcon from '../assets/axioma-icon.png'; // Importamos el ícono
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -16,7 +15,11 @@ const Settings = () => {
         fiscal_year_start: '', base_currency: 'USD', incorporation_date: '',
         default_accounts_receivable: '', default_sales_income: '',
         default_accounts_payable: '', default_cost_of_goods_sold: '',
-        default_cash_account: ''
+        default_cash_account: '',
+        tax1_name: '', tax1_rate: '', tax1_account_id: '',
+        tax2_name: '', tax2_rate: '', tax2_account_id: '',
+        tax3_name: '', tax3_rate: '', tax3_account_id: '',
+        tax4_name: '', tax4_rate: '', tax4_account_id: ''
     });
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -73,7 +76,6 @@ const Settings = () => {
         try {
             const profileData = { ...profile };
             Object.keys(profileData).forEach(key => {
-                // Convertir campos vacíos a null para la base de datos, excepto los booleanos
                 if (typeof profileData[key] !== 'boolean' && (profileData[key] === null || profileData[key] === '')) {
                     profileData[key] = null;
                 }
@@ -92,7 +94,6 @@ const Settings = () => {
 
     if (loading) return <p>Cargando configuración...</p>;
 
-    // Componente interno para los inputs
     const FormInput = ({ label, name, value, ...props }) => (
         <div className="mb-4">
             <label htmlFor={name} className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
@@ -101,7 +102,6 @@ const Settings = () => {
         </div>
     );
 
-    // Componente interno para los selects
     const FormSelect = ({ label, name, value, children }) => (
         <div className="mb-4">
             <label htmlFor={name} className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
@@ -112,20 +112,17 @@ const Settings = () => {
         </div>
     );
 
-    // Componente interno para las cabeceras de sección
     const SectionHeader = ({ title }) => (
         <h3 className="md:col-span-2 lg:col-span-3 text-lg font-semibold text-gray-700 mt-6 border-b pb-2 mb-2">{title}</h3>
     );
 
     return (
-        // Contenedor principal de la tarjeta
         <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg my-8 max-w-6xl mx-auto">
             <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-6">
                 <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
                 Configuración de la Empresa
             </h2>
 
-            {/* --- Barra de Pestañas --- */}
             <div className="flex border-b-2 border-gray-200 mb-6">
                 <button type="button" onClick={() => setActiveTab('general')}
                     className={`py-3 px-6 text-gray-500 font-medium hover:text-gray-800 focus:outline-none transition-colors ${activeTab === 'general' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}>
@@ -143,7 +140,6 @@ const Settings = () => {
 
             <form onSubmit={handleSubmit}>
                 <div className="tab-content">
-                    {/* --- Pestaña General --- */}
                     {activeTab === 'general' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
                             <SectionHeader title="Información General" />
@@ -176,7 +172,6 @@ const Settings = () => {
                         </div>
                     )}
 
-                    {/* --- Pestaña Fiscal y Contable --- */}
                     {activeTab === 'fiscal' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
                             <SectionHeader title="Información Fiscal y Legal" />
@@ -189,16 +184,55 @@ const Settings = () => {
                             <FormInput label="Comienzo del Año Fiscal" name="fiscal_year_start" value={profile.fiscal_year_start} type="date" />
                             <FormInput label="Moneda Base" name="base_currency" value={profile.base_currency} type="text" />
 
-                            <SectionHeader title="Tasas de Impuestos Globales" />
-                            <p className="md:col-span-3 text-sm text-gray-500 -mt-4 mb-4">Define las tasas para los impuestos. Por ejemplo, para un 18%, escribe 0.18.</p>
-                            <FormInput label="Tasa del Impuesto 1" name="tax1_rate" value={profile.tax1_rate} type="number" step="0.0001" placeholder="Ej: 0.18" />
-                            <FormInput label="Tasa del Impuesto 2" name="tax2_rate" value={profile.tax2_rate} type="number" step="0.0001" placeholder="Ej: 0.07" />
-                            <FormInput label="Tasa del Impuesto 3" name="tax3_rate" value={profile.tax3_rate} type="number" step="0.0001" />
-                            <FormInput label="Tasa del Impuesto 4" name="tax4_rate" value={profile.tax4_rate} type="number" step="0.0001" />
+                            <SectionHeader title="Configuración de Impuestos" />
+                            <p className="md:col-span-3 text-sm text-gray-500 -mt-4 mb-4">Define los impuestos globales. Asigna un nombre, una tasa (ej: 0.18 para 18%) y la cuenta de pasivo donde se registrará.</p>
+
+                            {/* Tax 1 */}
+                            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 className="md:col-span-3 font-semibold text-gray-700">Impuesto 1</h4>
+                                <FormInput label="Nombre" name="tax1_name" value={profile.tax1_name} type="text" placeholder="Ej: ITBIS" />
+                                <FormInput label="Tasa (Decimal)" name="tax1_rate" value={profile.tax1_rate} type="number" step="0.0001" placeholder="0.18" />
+                                <FormSelect label="Cuenta de Pasivo" name="tax1_account_id" value={profile.tax1_account_id}>
+                                    <option value="">Seleccionar...</option>
+                                    {accounts.filter(a => a.account_type === 'Pasivo').map(acc => (<option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>))}
+                                </FormSelect>
+                            </div>
+
+                            {/* Tax 2 */}
+                            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 className="md:col-span-3 font-semibold text-gray-700">Impuesto 2</h4>
+                                <FormInput label="Nombre" name="tax2_name" value={profile.tax2_name} type="text" placeholder="Ej: ISR" />
+                                <FormInput label="Tasa (Decimal)" name="tax2_rate" value={profile.tax2_rate} type="number" step="0.0001" placeholder="0.10" />
+                                <FormSelect label="Cuenta de Pasivo" name="tax2_account_id" value={profile.tax2_account_id}>
+                                    <option value="">Seleccionar...</option>
+                                    {accounts.filter(a => a.account_type === 'Pasivo').map(acc => (<option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>))}
+                                </FormSelect>
+                            </div>
+
+                            {/* Tax 3 */}
+                            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 className="md:col-span-3 font-semibold text-gray-700">Impuesto 3</h4>
+                                <FormInput label="Nombre" name="tax3_name" value={profile.tax3_name} type="text" />
+                                <FormInput label="Tasa (Decimal)" name="tax3_rate" value={profile.tax3_rate} type="number" step="0.0001" />
+                                <FormSelect label="Cuenta de Pasivo" name="tax3_account_id" value={profile.tax3_account_id}>
+                                    <option value="">Seleccionar...</option>
+                                    {accounts.filter(a => a.account_type === 'Pasivo').map(acc => (<option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>))}
+                                </FormSelect>
+                            </div>
+
+                            {/* Tax 4 */}
+                            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 className="md:col-span-3 font-semibold text-gray-700">Impuesto 4</h4>
+                                <FormInput label="Nombre" name="tax4_name" value={profile.tax4_name} type="text" />
+                                <FormInput label="Tasa (Decimal)" name="tax4_rate" value={profile.tax4_rate} type="number" step="0.0001" />
+                                <FormSelect label="Cuenta de Pasivo" name="tax4_account_id" value={profile.tax4_account_id}>
+                                    <option value="">Seleccionar...</option>
+                                    {accounts.filter(a => a.account_type === 'Pasivo').map(acc => (<option key={acc.account_id} value={acc.account_id}>{acc.account_name}</option>))}
+                                </FormSelect>
+                            </div>
                         </div>
                     )}
 
-                    {/* --- Pestaña Cuentas Vinculadas --- */}
                     {activeTab === 'accounts' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
                             <SectionHeader title="Cuentas Vinculadas por Defecto" />
@@ -226,7 +260,6 @@ const Settings = () => {
                     )}
                 </div>
 
-                {/* --- Botón de Guardar --- */}
                 <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
                     <button type="submit" className="py-2 px-5 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors">
                         Guardar Cambios

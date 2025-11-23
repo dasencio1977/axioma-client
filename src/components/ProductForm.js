@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-// Eliminamos la importación de './ProductForm.css' y './ClientForm.css'
-import axiomaIcon from '../assets/axioma-icon.png'; // Importamos el ícono
+import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -13,17 +12,22 @@ const ProductForm = ({ onSave, onCancel, currentProduct }) => {
         tax3_name: '', tax3_applies: false, tax4_name: '', tax4_applies: false,
     });
     const [accounts, setAccounts] = useState([]);
+    const [profile, setProfile] = useState({});
 
     useEffect(() => {
-        // Cargar el plan de cuentas para el dropdown
         const token = localStorage.getItem('token');
-        fetch(`${apiUrl}/api/accounts?all=true`, { headers: { 'x-auth-token': token } })
-            .then(res => res.json())
-            .then(data => setAccounts(data))
-            .catch(err => toast.error("Error al cargar el plan de cuentas."));
+        Promise.all([
+            fetch(`${apiUrl}/api/accounts?all=true`, { headers: { 'x-auth-token': token } }),
+            fetch(`${apiUrl}/api/profile`, { headers: { 'x-auth-token': token } })
+        ])
+            .then(([accountsRes, profileRes]) => Promise.all([accountsRes.json(), profileRes.json()]))
+            .then(([accountsData, profileData]) => {
+                setAccounts(accountsData);
+                setProfile(profileData);
+            })
+            .catch(err => toast.error("Error al cargar datos."));
 
         if (currentProduct) {
-            // Aseguramos que los booleanos tengan valor
             setFormData({
                 code: currentProduct.code || '',
                 name: currentProduct.name || '',
@@ -40,7 +44,6 @@ const ProductForm = ({ onSave, onCancel, currentProduct }) => {
                 tax4_name: currentProduct.tax4_name || '', tax4_applies: !!currentProduct.tax4_applies,
             });
         } else {
-            // Resetear a valores por defecto
             setFormData({
                 code: '', name: '', product_type: 'Ingreso', price: '', cost: '',
                 gl_account_id: '', is_sales_item: true, is_purchase_item: false, is_service_item: false,
@@ -57,7 +60,6 @@ const ProductForm = ({ onSave, onCancel, currentProduct }) => {
 
     const onSubmit = (e) => { e.preventDefault(); onSave(formData); };
 
-    // --- Componentes internos de Formulario ---
     const FormInput = ({ label, name, value, ...props }) => (
         <div className="mb-4">
             <label htmlFor={name} className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
@@ -84,7 +86,6 @@ const ProductForm = ({ onSave, onCancel, currentProduct }) => {
     const SectionHeader = ({ title }) => (
         <h3 className="md:col-span-2 lg:col-span-3 text-lg font-semibold text-gray-700 mt-6 border-b pb-2 mb-2">{title}</h3>
     );
-    // --- Fin de Componentes internos ---
 
     return (
         <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg my-8">
@@ -115,21 +116,12 @@ const ProductForm = ({ onSave, onCancel, currentProduct }) => {
                     <FormCheckbox label="Es un Servicio (No inventariable)" name="is_service_item" checked={formData.is_service_item} />
 
                     <SectionHeader title="Configuración de Impuestos" />
-                    {/* Impuesto 1 */}
-                    <FormInput label="Nombre del Impuesto 1" name="tax1_name" value={formData.tax1_name} type="text" />
-                    <FormCheckbox label="Aplica Impuesto 1" name="tax1_applies" checked={formData.tax1_applies} />
-                    <div></div> {/* Relleno de grid */}
-                    {/* Impuesto 2 */}
-                    <FormInput label="Nombre del Impuesto 2" name="tax2_name" value={formData.tax2_name} type="text" />
-                    <FormCheckbox label="Aplica Impuesto 2" name="tax2_applies" checked={formData.tax2_applies} />
-                    <div></div>
-                    {/* Impuesto 3 */}
-                    <FormInput label="Nombre del Impuesto 3" name="tax3_name" value={formData.tax3_name} type="text" />
-                    <FormCheckbox label="Aplica Impuesto 3" name="tax3_applies" checked={formData.tax3_applies} />
-                    <div></div>
-                    {/* Impuesto 4 */}
-                    <FormInput label="Nombre del Impuesto 4" name="tax4_name" value={formData.tax4_name} type="text" />
-                    <FormCheckbox label="Aplica Impuesto 4" name="tax4_applies" checked={formData.tax4_applies} />
+                    <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormCheckbox label={`Aplica ${profile.tax1_name || 'Impuesto 1'} (${profile.tax1_rate ? (profile.tax1_rate * 100).toFixed(2) + '%' : '0%'})`} name="tax1_applies" checked={formData.tax1_applies} />
+                        <FormCheckbox label={`Aplica ${profile.tax2_name || 'Impuesto 2'} (${profile.tax2_rate ? (profile.tax2_rate * 100).toFixed(2) + '%' : '0%'})`} name="tax2_applies" checked={formData.tax2_applies} />
+                        <FormCheckbox label={`Aplica ${profile.tax3_name || 'Impuesto 3'} (${profile.tax3_rate ? (profile.tax3_rate * 100).toFixed(2) + '%' : '0%'})`} name="tax3_applies" checked={formData.tax3_applies} />
+                        <FormCheckbox label={`Aplica ${profile.tax4_name || 'Impuesto 4'} (${profile.tax4_rate ? (profile.tax4_rate * 100).toFixed(2) + '%' : '0%'})`} name="tax4_applies" checked={formData.tax4_applies} />
+                    </div>
                 </div>
 
                 <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
