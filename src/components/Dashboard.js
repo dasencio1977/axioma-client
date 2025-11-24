@@ -1,30 +1,34 @@
 import React, { useState, useEffect } from 'react';
-// import { Link } from 'react-router-dom'; // Ya no se necesita para los KPIs
 import { toast } from 'react-toastify';
-// Importamos el nuevo gráfico combinado
 import CashFlowComboChart from './charts/CashFlowComboChart';
-// Eliminamos la importación de ExpensePieChart
+import IncomeExpenseBarChart from './charts/IncomeExpenseBarChart';
+import ComparativeChart from './charts/ComparativeChart';
 import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const Dashboard = () => {
-    // Eliminamos los estados para 'summaryData' y 'expenseCategoryData'
     const [incomeExpenseData, setIncomeExpenseData] = useState(null);
+    const [comparativeData, setComparativeData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [monthsFilter, setMonthsFilter] = useState(12); // Default 12 months
 
     useEffect(() => {
         const fetchData = async () => {
             const token = localStorage.getItem('token');
+            setLoading(true);
             try {
-                // Ahora solo necesitamos una petición a la API
-                const ieChartRes = await fetch(`${apiUrl}/api/dashboard/charts/income-expense`, { headers: { 'x-auth-token': token } });
+                const [ieChartRes, compChartRes] = await Promise.all([
+                    fetch(`${apiUrl}/api/dashboard/charts/income-expense?months=${monthsFilter}`, { headers: { 'x-auth-token': token } }),
+                    fetch(`${apiUrl}/api/dashboard/charts/comparative`, { headers: { 'x-auth-token': token } })
+                ]);
 
-                if (!ieChartRes.ok) {
+                if (!ieChartRes.ok || !compChartRes.ok) {
                     throw new Error('Error al cargar los datos del dashboard.');
                 }
 
                 setIncomeExpenseData(await ieChartRes.json());
+                setComparativeData(await compChartRes.json());
             } catch (err) {
                 toast.error(err.message);
             } finally {
@@ -32,50 +36,64 @@ const Dashboard = () => {
             }
         };
         fetchData();
-    }, [apiUrl]);
+    }, [apiUrl, monthsFilter]);
 
-    // --- RENDERIZADO ---
-
-    if (loading) {
-        return <p>Cargando dashboard...</p>;
+    if (loading && !incomeExpenseData) {
+        return <p className="p-8 text-center text-gray-500">Cargando dashboard...</p>;
     }
 
-    if (!incomeExpenseData) {
-        return <p>Error: No se pudieron cargar los datos del dashboard. Intenta recargar la página.</p>;
+    if (!incomeExpenseData || !comparativeData) {
+        return <p className="p-8 text-center text-red-500">Error: No se pudieron cargar los datos del dashboard.</p>;
     }
 
-    // --- Cálculo del Cambio Neto ---
-    // Calculamos el 'netChangeData' restando gastos de ingresos para cada mes
+    // --- Cálculo del Cambio Neto para CashFlow ---
     const netChangeData = incomeExpenseData.incomeData.map((income, index) => {
         return income - incomeExpenseData.expenseData[index];
     });
 
-    // Preparamos los datos para el nuevo gráfico
     const cashFlowChartData = {
         labels: incomeExpenseData.labels,
         incomeData: incomeExpenseData.incomeData,
-        // --- LA CORRECCIÓN ESTÁ AQUÍ ---
-        // Convertimos los datos de 'expenseData' a valores negativos usando .map()
         outflowData: incomeExpenseData.expenseData.map(value => -value),
         netChangeData: netChangeData
     };
 
     return (
-        <div>
-            <header>
-                <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
+        <div className="p-6">
+            <header className="flex justify-between items-center mb-8">
+                <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800">
                     <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
-                    Dashboard
+                    Dashboard Financiero
                 </h2>
+
+                {/* Filtro de Meses */}
+                <div className="flex items-center gap-2">
+                    <label className="text-gray-600 font-medium">Periodo:</label>
+                    <select
+                        value={monthsFilter}
+                        onChange={(e) => setMonthsFilter(parseInt(e.target.value))}
+                        className="border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                        <option value={12}>Últimos 12 Meses</option>
+                        <option value={26}>Últimos 26 Meses</option>
+                    </select>
+                </div>
             </header>
 
-            {/* --- Tarjetas KPI Eliminadas --- */}
-
-            {/* --- Gráfico de Flujo de Caja --- */}
-            {/* Hacemos que este gráfico ocupe todo el ancho */}
-            <div className="grid grid-cols-1 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-lg h-[60vh] relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 1. Gráfico de Flujo de Caja (Combo) */}
+                <div className="bg-white p-6 rounded-xl shadow-lg h-[400px] lg:col-span-2">
                     <CashFlowComboChart chartData={cashFlowChartData} />
+                </div>
+
+                {/* 2. Gráfico de Ingresos vs Gastos (Barras) */}
+                <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+                    <IncomeExpenseBarChart chartData={incomeExpenseData} />
+                </div>
+
+                {/* 3. Gráfico Comparativo (Año Actual vs Anterior) */}
+                <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+                    <ComparativeChart chartData={comparativeData} />
                 </div>
             </div>
         </div>

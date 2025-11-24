@@ -34,8 +34,8 @@ const Login = () => {
             <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <div className="text-center mb-8">
                     {/* Encabezado */}
-                    <h2 className="text-3xl font-bold text-gray-800">Axioma</h2>
-                    <p className="text-gray-500 mt-2">Bienvenido de nuevo</p>
+                    <h2 className="text-3xl font-bold text-gray-800">Axioma Accounting Pro</h2>
+                    <p className="text-gray-500 mt-2">Bienvenido de Nuevo</p>
                 </div>
                 <form onSubmit={onSubmit}>
                     {/* Grupo de formulario */}

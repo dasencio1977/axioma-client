@@ -2,12 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Papa from 'papaparse';
-// Eliminamos la importación de './Invoices.css'
 import axiomaIcon from '../assets/axioma-icon.png';
+import PaymentModal from './PaymentModal';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-// Componente interno para los Badges de Estado (ya refactorizado)
 const StatusBadge = ({ status }) => {
     const statusClasses = {
         'Pagada': 'bg-green-100 text-green-800',
@@ -34,10 +33,10 @@ const Invoices = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [limit, setLimit] = useState(10);
+    const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState(null);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // --- LÓGICA DE DATOS ---
     const fetchInvoices = async (page, currentLimit) => {
         setLoading(true);
         const token = localStorage.getItem('token');
@@ -66,7 +65,6 @@ const Invoices = () => {
         fetchInvoices(currentPage, limit);
     }, [currentPage, limit]);
 
-    // --- LÓGICA COMPLETA DE handleDelete ---
     const handleDelete = (invoiceId) => {
         const performDelete = async () => {
             const token = localStorage.getItem('token');
@@ -76,7 +74,7 @@ const Invoices = () => {
                     headers: { 'x-auth-token': token },
                 });
                 toast.success('Factura eliminada con éxito');
-                fetchInvoices(1, limit); // Recargar desde la página 1
+                fetchInvoices(1, limit);
             } catch (err) {
                 toast.error('Error al eliminar la factura.');
             }
@@ -91,7 +89,6 @@ const Invoices = () => {
         toast.warn(<ConfirmationToast />, { closeOnClick: false, autoClose: false });
     };
 
-    // --- LÓGICA COMPLETA DE handleDownload ---
     const handleDownload = async (invoiceId, invoiceNumber) => {
         const token = localStorage.getItem('token');
         try {
@@ -146,7 +143,6 @@ const Invoices = () => {
 
     if (loading) return <p>Cargando facturas...</p>;
 
-    // --- JSX (SIN CAMBIOS, YA ESTÁ REFACTORIZADO) ---
     return (
         <div>
             <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
@@ -221,6 +217,14 @@ const Invoices = () => {
                                                 <div className="flex gap-2">
                                                     <button className="py-1 px-3 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600" onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}>Ver</button>
                                                     <button className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600" onClick={() => navigate(`/invoices/edit/${invoice.invoice_id}`)}>Editar</button>
+                                                    {invoice.status !== 'Pagada' && invoice.status !== 'Anulada' && (
+                                                        <button
+                                                            className="py-1 px-3 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+                                                            onClick={() => setSelectedInvoiceForPayment(invoice)}
+                                                        >
+                                                            Pagar
+                                                        </button>
+                                                    )}
                                                     <button className="py-1 px-3 bg-cyan-500 text-white rounded-md text-sm font-medium hover:bg-cyan-600" onClick={() => handleDownload(invoice.invoice_id, invoice.invoice_number)}>PDF</button>
                                                     <button className="py-1 px-3 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700" onClick={() => handleDelete(invoice.invoice_id)}>Eliminar</button>
                                                 </div>
@@ -264,6 +268,17 @@ const Invoices = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {selectedInvoiceForPayment && (
+                <PaymentModal
+                    invoice={selectedInvoiceForPayment}
+                    onClose={() => setSelectedInvoiceForPayment(null)}
+                    onPaymentSuccess={() => {
+                        fetchInvoices(currentPage, limit);
+                        setSelectedInvoiceForPayment(null);
+                    }}
+                />
             )}
         </div>
     );

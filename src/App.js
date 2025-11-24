@@ -33,6 +33,10 @@ import BalanceSheetReport from './components/BalanceSheetReport';
 import CashFlowStatement from './components/CashFlowStatement';
 import GeneralLedger from './components/GeneralLedger';
 import AddPayment from './components/AddPayment';
+import Estimates from './components/Estimates';
+import EstimateForm from './components/EstimateForm';
+import RecurringInvoices from './components/RecurringInvoices';
+import RecurringInvoiceForm from './components/RecurringInvoiceForm';
 
 // Componente de Ruta Privada
 const PrivateRoute = ({ children }) => {
@@ -73,6 +77,14 @@ function App() {
         <Route path="/invoices/edit/:id" element={<PrivateRoute><InvoiceForm /></PrivateRoute>} />
         <Route path="/invoices/:id" element={<PrivateRoute><InvoiceDetail /></PrivateRoute>} />
         <Route path="/invoices/:id/add-payment" element={<PrivateRoute><AddPayment /></PrivateRoute>} />
+
+        <Route path="/estimates" element={<PrivateRoute><Estimates /></PrivateRoute>} />
+        <Route path="/estimates/new" element={<PrivateRoute><EstimateForm /></PrivateRoute>} />
+        <Route path="/estimates/edit/:id" element={<PrivateRoute><EstimateForm /></PrivateRoute>} />
+
+        <Route path="/recurring-invoices" element={<PrivateRoute><RecurringInvoices /></PrivateRoute>} />
+        <Route path="/recurring-invoices/new" element={<PrivateRoute><RecurringInvoiceForm /></PrivateRoute>} />
+        <Route path="/recurring-invoices/edit/:id" element={<PrivateRoute><RecurringInvoiceForm /></PrivateRoute>} />
 
         <Route path="/vendors" element={<PrivateRoute><Vendors /></PrivateRoute>} />
         <Route path="/vendors/new" element={<PrivateRoute><VendorForm /></PrivateRoute>} />
