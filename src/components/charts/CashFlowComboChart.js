@@ -69,7 +69,7 @@ const CashFlowComboChart = ({ chartData }) => {
             },
             title: {
                 display: true,
-                text: 'Flujo de Caja Mensual (Últimos 6 Meses)',
+                text: 'Flujo de Caja Mensual',
                 font: {
                     size: 18
                 }

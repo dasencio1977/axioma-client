@@ -28,7 +28,7 @@ const IncomeExpenseChart = ({ chartData }) => {
         responsive: true,
         plugins: {
             legend: { position: 'top' },
-            title: { display: true, text: 'Ingresos vs. Gastos (Últimos 6 Meses)' },
+            title: { display: true, text: 'Ingresos vs. Gastos' },
         },
     };
     return <Bar data={data} options={options} />;

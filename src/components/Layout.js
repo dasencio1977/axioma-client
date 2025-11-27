@@ -21,6 +21,7 @@ const Layout = ({ children }) => {
     const [isPurchasesOpen, setIsPurchasesOpen] = useState(false);
     const [isAccountingOpen, setIsAccountingOpen] = useState(false);
     const [isReportsOpen, setIsReportsOpen] = useState(false);
+    const [isBankOpen, setIsBankOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
@@ -29,6 +30,7 @@ const Layout = ({ children }) => {
         setIsPurchasesOpen(path.startsWith('/bills') || path.startsWith('/expenses') || path.startsWith('/vendors'));
         setIsAccountingOpen(path.startsWith('/chart-of-accounts') || path.startsWith('/journal-entries'));
         setIsReportsOpen(path.startsWith('/reports'));
+        setIsBankOpen(path.startsWith('/bank-accounts') || path.startsWith('/deposits'));
     }, [location.pathname]);
 
     const handleLogout = () => {
@@ -107,10 +109,16 @@ const Layout = ({ children }) => {
 
                         {/* --- Menú Bancos --- */}
                         <li>
-                            <NavLink to="/bank-accounts" className={getNavLinkClass}>
-                                <LandmarkIcon />
-                                {!isCollapsed && <span>Bancos</span>}
-                            </NavLink>
+                            <div className={menuGroupClass} onClick={() => setIsBankOpen(!isBankOpen)}>
+                                <div className="flex items-center gap-3"><LandmarkIcon /> {!isCollapsed && <span>Bancos</span>}</div>
+                                {!isCollapsed && <ChevronDownIcon className={`w-4 h-4 transition-transform ${isBankOpen ? 'rotate-180' : ''}`} />}
+                            </div>
+                            {isBankOpen && (
+                                <ul className={`list-none ${isCollapsed ? 'pl-0' : 'pl-6'} mt-2 space-y-1`}>
+                                    <li><NavLink to="/bank-accounts" className={getNavLinkClass} title="Cuentas Bancarias">{isCollapsed ? 'CB' : 'Cuentas Bancarias'}</NavLink></li>
+                                    <li><NavLink to="/deposits" className={getNavLinkClass} title="Depósitos">{isCollapsed ? 'DP' : 'Depósitos'}</NavLink></li>
+                                </ul>
+                            )}
                         </li>
 
                         {/* --- Menú Contabilidad --- */}

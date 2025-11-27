@@ -23,6 +23,7 @@ import Expenses from './components/Expenses';
 import Products from './components/Products';
 import BankAccounts from './components/BankAccounts';
 import BankTransactions from './components/BankTransactions';
+import BankDeposits from './components/BankDeposits';
 import ChartOfAccounts from './components/ChartOfAccounts';
 import JournalEntries from './components/JournalEntries';
 import JournalEntryForm from './components/JournalEntryForm';
@@ -97,10 +98,9 @@ function App() {
         <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
 
         <Route path="/products" element={<PrivateRoute><Products /></PrivateRoute>} />
-
         <Route path="/bank-accounts" element={<PrivateRoute><BankAccounts /></PrivateRoute>} />
         <Route path="/bank-accounts/:accountId" element={<PrivateRoute><BankTransactions /></PrivateRoute>} />
-
+        <Route path="/deposits" element={<PrivateRoute><BankDeposits /></PrivateRoute>} />
         <Route path="/chart-of-accounts" element={<PrivateRoute><ChartOfAccounts /></PrivateRoute>} />
         <Route path="/journal-entries" element={<PrivateRoute><JournalEntries /></PrivateRoute>} />
         <Route path="/journal-entries/new" element={<PrivateRoute><JournalEntryForm /></PrivateRoute>} />

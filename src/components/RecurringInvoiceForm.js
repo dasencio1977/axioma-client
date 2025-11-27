@@ -215,8 +215,8 @@ const RecurringInvoiceForm = () => {
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Items de la Factura</h3>
                     <div className="space-y-4">
                         {formData.items.map((item, index) => (
-                            <div key={index} className="flex gap-4 items-start bg-gray-50 p-4 rounded-lg">
-                                <div className="flex-1">
+                            <div key={index} className="flex gap-4 items-start bg-gray-50 p-4 rounded-lg flex-wrap">
+                                <div className="flex-1 min-w-[200px]">
                                     <select
                                         value={item.product_id}
                                         onChange={(e) => handleItemChange(index, 'product_id', e.target.value)}
@@ -228,6 +228,15 @@ const RecurringInvoiceForm = () => {
                                             <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div className="flex-[2] min-w-[200px]">
+                                    <input
+                                        type="text"
+                                        value={item.description || ''}
+                                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                                        placeholder="Descripción"
+                                    />
                                 </div>
                                 <div className="w-24">
                                     <input
