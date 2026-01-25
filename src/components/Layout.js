@@ -11,7 +11,8 @@ import {
     SettingsIcon,
     ChevronDownIcon,
     MenuIcon,
-    LandmarkIcon
+    LandmarkIcon,
+    UsersIcon
 } from './Icons';
 
 const Layout = ({ children }) => {
@@ -157,6 +158,13 @@ const Layout = ({ children }) => {
                             <NavLink to="/settings" className={getNavLinkClass}>
                                 <SettingsIcon />
                                 {!isCollapsed && <span>Configuración</span>}
+                            </NavLink>
+                        </li>
+                        {/* --- Menú Empleados --- */}
+                        <li>
+                            <NavLink to="/employees" className={getNavLinkClass}>
+                                <UsersIcon />
+                                {!isCollapsed && <span>Empleados</span>}
                             </NavLink>
                         </li>
                     </ul>
