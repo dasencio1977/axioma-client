@@ -6,7 +6,7 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
     const [formData, setFormData] = useState({
         // Personal
         first_name: '', initial: '', last_name_paternal: '', last_name_maternal: '',
-        is_us_citizen: true, ssn: '', international_id: '',
+        is_us_citizen: true, ssn: '', international_id: '', birth_date: '',
         residential_phone: '', cell_phone: '', alternate_phone: '',
 
         // Addresses
@@ -22,10 +22,12 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
         // Employment
         position: '', reports_to: '', employment_type: 'Salaried',
         payment_frequency: 'Weekly', pay_rate: '', annual_salary: '',
+        hiring_date: '', termination_date: '',
 
         // Tax / Financial
         tax_exemption_type: 'None',
         payment_method: 'Check', bank_account_number: '', bank_routing_number: '',
+        loan_repayment_401k_amount: '',
 
         // Tax Percentages
         state_tax_percent: '', federal_tax_percent: '',
@@ -33,6 +35,9 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
         employer_401k_percent: '', employee_401k_percent: '',
         employer_state_unemployment_percent: '', employer_federal_unemployment_percent: '',
         employer_state_disability_percent: '', employee_state_disability_percent: '',
+
+        // Balances
+        vacation_hours_balance: '', sick_hours_balance: '',
 
         // Emergency Contacts (Array of 3 empty objects)
         emergency_contacts: [
@@ -155,8 +160,8 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`py-3 px-4 text-sm font-medium focus:outline-none transition-colors whitespace-nowrap ${activeTab === tab.id
-                                ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                             }`}
                     >
                         {tab.label}
@@ -198,6 +203,7 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                         <div><label className="block text-sm font-medium mb-1">Celular</label><input type="text" name="cell_phone" value={formData.cell_phone} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                         <div><label className="block text-sm font-medium mb-1">Residencial</label><input type="text" name="residential_phone" value={formData.residential_phone} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                         <div><label className="block text-sm font-medium mb-1">Alterno</label><input type="text" name="alternate_phone" value={formData.alternate_phone} onChange={handleChange} className="w-full border p-2 rounded" /></div>
+                        <div><label className="block text-sm font-medium mb-1">Fecha de Nacimiento</label><input type="date" name="birth_date" value={formData.birth_date ? formData.birth_date.split('T')[0] : ''} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                     </div>
                 )}
 
@@ -251,6 +257,9 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div><label className="block text-sm font-medium mb-1">Puesto</label><input type="text" name="position" value={formData.position} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                         <div><label className="block text-sm font-medium mb-1">Se reporta a</label><input type="text" name="reports_to" value={formData.reports_to} onChange={handleChange} className="w-full border p-2 rounded" /></div>
+
+                        <div><label className="block text-sm font-medium mb-1">Fecha de Contratación</label><input type="date" name="hiring_date" value={formData.hiring_date ? formData.hiring_date.split('T')[0] : ''} onChange={handleChange} className="w-full border p-2 rounded" /></div>
+                        <div><label className="block text-sm font-medium mb-1">Fecha de Terminación</label><input type="date" name="termination_date" value={formData.termination_date ? formData.termination_date.split('T')[0] : ''} onChange={handleChange} className="w-full border p-2 rounded" /></div>
 
                         <div className="col-span-2 border-t pt-4 mt-2"><h4 className="font-semibold mb-2">Compensación</h4></div>
 
@@ -340,6 +349,18 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                                 <div><label className="block mb-1">Desempleo Federal</label><input type="number" step="0.01" name="employer_federal_unemployment_percent" value={formData.employer_federal_unemployment_percent} onChange={handleChange} className="w-full border p-2 rounded bg-gray-50" placeholder="0.00" /></div>
                                 <div><label className="block mb-1">Incapacidad Patrono</label><input type="number" step="0.01" name="employer_state_disability_percent" value={formData.employer_state_disability_percent} onChange={handleChange} className="w-full border p-2 rounded bg-gray-50" placeholder="0.00" /></div>
                             </div>
+                        </div>
+                        <div className="border-t pt-4">
+                            <h4 className="font-semibold mb-3">Balances de Licencias (Horas)</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium mb-1">Vacaciones Acumuladas</label><input type="number" step="0.01" name="vacation_hours_balance" value={formData.vacation_hours_balance} onChange={handleChange} className="w-full border p-2 rounded" /></div>
+                                <div><label className="block text-sm font-medium mb-1">Enfermedad Acumulada</label><input type="number" step="0.01" name="sick_hours_balance" value={formData.sick_hours_balance} onChange={handleChange} className="w-full border p-2 rounded" /></div>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <h4 className="font-semibold mb-3">Deducciones Adicionales</h4>
+                            <div><label className="block text-sm font-medium mb-1">Pago Mensual Préstamo 401k ($)</label><input type="number" step="0.01" name="loan_repayment_401k_amount" value={formData.loan_repayment_401k_amount} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                         </div>
                     </div>
                 )}

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
+const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
     // Logic: If Salaried -> Input Hours. If Exempt -> Input Amount (Defaulted to Fixed Period). If Pro -> Input Amount (Defaulted to rate).
 
     // Initial State Deduction
@@ -18,6 +19,7 @@ const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
     const [deductions, setDeductions] = useState({});
     const [totalDeductions, setTotalDeductions] = useState(0);
     const [netPay, setNetPay] = useState(0);
+    const [isManualEdit, setIsManualEdit] = useState(false);
 
     useEffect(() => {
         fetchBankAccounts();
@@ -25,7 +27,11 @@ const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
     }, [employee]);
 
     useEffect(() => {
-        calculateBreakdown(amount);
+        if (!isManualEdit) {
+            calculateBreakdown(amount);
+        } else {
+            updateTotals(deductions, amount);
+        }
     }, [amount]);
 
     const fetchBankAccounts = async () => {
@@ -62,49 +68,50 @@ const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
         if (employee.employment_type === 'Salaried') {
             const newAmount = h * (parseFloat(employee.pay_rate) || 0);
             setAmount(newAmount.toFixed(2));
+            setIsManualEdit(false); // Reset manual flag on auto-calc trigger
         }
     };
 
     const calculateBreakdown = (grossVal) => {
         const gross = parseFloat(grossVal) || 0;
         let breakdown = {};
-        let total = 0;
 
         if (employee.employment_type === 'Professional Services') {
             if (gross > 500) {
                 const ret = (gross - 500) * 0.10;
-                breakdown['Retención 10%'] = ret;
-                total += ret;
+                breakdown['Retención 10%'] = ret.toFixed(2);
             }
         } else {
             // Apply percentages from employee record
-            const getVal = (pct) => gross * ((parseFloat(pct) || 0) / 100);
+            const getVal = (pct) => (gross * ((parseFloat(pct) || 0) / 100)).toFixed(2);
 
-            const stateTax = getVal(employee.state_tax_percent);
-            if (stateTax > 0) breakdown['Income Tax Estatal'] = stateTax;
+            if (parseFloat(employee.state_tax_percent) > 0) breakdown['Income Tax Estatal'] = getVal(employee.state_tax_percent);
+            if (parseFloat(employee.federal_tax_percent) > 0) breakdown['Income Tax Federal'] = getVal(employee.federal_tax_percent);
+            if (parseFloat(employee.social_security_percent) > 0) breakdown['Seguro Social'] = getVal(employee.social_security_percent);
+            if (parseFloat(employee.medicare_percent) > 0) breakdown['Medicare'] = getVal(employee.medicare_percent);
+            if (parseFloat(employee.employee_401k_percent) > 0) breakdown['401k'] = getVal(employee.employee_401k_percent);
+            if (parseFloat(employee.employee_state_disability_percent) > 0) breakdown['Incapacidad'] = getVal(employee.employee_state_disability_percent);
 
-            const fedTax = getVal(employee.federal_tax_percent);
-            if (fedTax > 0) breakdown['Income Tax Federal'] = fedTax;
-
-            const ss = getVal(employee.social_security_percent);
-            if (ss > 0) breakdown['Seguro Social'] = ss;
-
-            const med = getVal(employee.medicare_percent);
-            if (med > 0) breakdown['Medicare'] = med;
-
-            const ae401k = getVal(employee.employee_401k_percent);
-            if (ae401k > 0) breakdown['401k'] = ae401k;
-
-            const disability = getVal(employee.employee_state_disability_percent);
-            if (disability > 0) breakdown['Incapacidad'] = disability;
-
-            // Sum all
-            total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+            // 401k Loan
+            if (parseFloat(employee.loan_repayment_401k_amount) > 0) breakdown['Préstamo 401k'] = parseFloat(employee.loan_repayment_401k_amount).toFixed(2);
         }
 
         setDeductions(breakdown);
+        updateTotals(breakdown, gross);
+    };
+
+    const updateTotals = (currentDeductions, grossVal) => {
+        const gross = parseFloat(grossVal) || 0;
+        const total = Object.values(currentDeductions).reduce((a, b) => a + (parseFloat(b) || 0), 0);
         setTotalDeductions(total);
         setNetPay(Math.max(0, gross - total));
+    };
+
+    const handleDeductionChange = (name, value) => {
+        setIsManualEdit(true);
+        const newDeductions = { ...deductions, [name]: value };
+        setDeductions(newDeductions);
+        updateTotals(newDeductions, amount);
     };
 
     const handleSubmit = async (e) => {
@@ -120,10 +127,12 @@ const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
                 },
                 body: JSON.stringify({
                     employee_id: employee.employee_id,
+                    period_id: periodId,
                     payment_date: date,
                     gross_amount_override: amount,
                     hours_worked: employee.employment_type === 'Salaried' ? hours : 0,
                     bank_account_id: selectedBank,
+                    deduction_details: deductions // Send modified deductions
                 })
             });
 
@@ -189,28 +198,41 @@ const PayrollModal = ({ employee, onClose, onPaymentSuccess }) => {
                             <input
                                 type="number" step="0.01" value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                className={`w-full px-4 py-2 border rounded-lg font-semibold text-lg ${employee.employment_type === 'Salaried' ? 'bg-gray-100' : 'bg-white'}`}
+                                className={`w - full px - 4 py - 2 border rounded - lg font - semibold text - lg ${employee.employment_type === 'Salaried' ? 'bg-gray-100' : 'bg-white'} `}
                                 readOnly={employee.employment_type === 'Salaried'}
                             />
                         </div>
 
                         {/* Breakdown */}
                         <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm">
-                            <h4 className="font-semibold mb-2 text-gray-700 border-b pb-1">Desglose de Deducciones</h4>
+                            <h4 className="font-semibold mb-2 text-gray-700 border-b pb-1">Desglose de Deducciones (Editable)</h4>
                             {Object.entries(deductions).length === 0 ? (
                                 <p className="text-gray-500 italic">No hay deducciones aplicables.</p>
                             ) : (
-                                <ul className="space-y-1">
+                                <ul className="space-y-2">
                                     {Object.entries(deductions).map(([name, val]) => (
-                                        <li key={name} className="flex justify-between">
-                                            <span className="text-gray-600">{name}</span>
-                                            <span className="text-red-500 font-medium">-${val.toFixed(2)}</span>
+                                        <li key={name} className="flex justify-between items-center bg-white p-2 border rounded">
+                                            <span className="text-gray-600 text-sm">{name}</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-gray-400 text-sm">-$</span>
+                                                <input
+                                                    type="number" step="0.01"
+                                                    value={val}
+                                                    onChange={(e) => handleDeductionChange(name, e.target.value)}
+                                                    className="w-24 border rounded px-1 text-right font-medium text-red-600 focus:outline-none focus:border-blue-500"
+                                                />
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
                             )}
 
-                            <div className="flex justify-between mt-3 pt-3 border-t border-gray-300 font-bold text-base">
+                            <div className="flex justify-between mt-3 pt-3 font-medium text-gray-700">
+                                <span>Total Deducciones:</span>
+                                <span className="text-red-600">-${totalDeductions.toFixed(2)}</span>
+                            </div>
+
+                            <div className="flex justify-between mt-2 pt-3 border-t border-gray-300 font-bold text-base">
                                 <span>Pago Neto:</span>
                                 <span className="text-green-600">${netPay.toFixed(2)}</span>
                             </div>

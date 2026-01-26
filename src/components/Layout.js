@@ -23,6 +23,7 @@ const Layout = ({ children }) => {
     const [isAccountingOpen, setIsAccountingOpen] = useState(false);
     const [isReportsOpen, setIsReportsOpen] = useState(false);
     const [isBankOpen, setIsBankOpen] = useState(false);
+    const [isEmployeesOpen, setIsEmployeesOpen] = useState(false); // NEW STATE
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
@@ -32,6 +33,7 @@ const Layout = ({ children }) => {
         setIsAccountingOpen(path.startsWith('/chart-of-accounts') || path.startsWith('/journal-entries'));
         setIsReportsOpen(path.startsWith('/reports'));
         setIsBankOpen(path.startsWith('/bank-accounts') || path.startsWith('/deposits'));
+        setIsEmployeesOpen(path.startsWith('/employees') || path.startsWith('/payroll')); // NEW PATH LOGIC
     }, [location.pathname]);
 
     const handleLogout = () => {
@@ -136,6 +138,20 @@ const Layout = ({ children }) => {
                             )}
                         </li>
 
+                        {/* --- Menú Empleados --- */}
+                        <li>
+                            <div className={menuGroupClass} onClick={() => setIsEmployeesOpen(!isEmployeesOpen)}>
+                                <div className="flex items-center gap-3"><UsersIcon /> {!isCollapsed && <span>Empleados</span>}</div>
+                                {!isCollapsed && <ChevronDownIcon className={`w-4 h-4 transition-transform ${isEmployeesOpen ? 'rotate-180' : ''}`} />}
+                            </div>
+                            {isEmployeesOpen && (
+                                <ul className={`list-none ${isCollapsed ? 'pl-0' : 'pl-6'} mt-2 space-y-1`}>
+                                    <li><NavLink to="/employees" className={getNavLinkClass} title="Lista de Empleados">{isCollapsed ? 'LE' : 'Lista de Empleados'}</NavLink></li>
+                                    <li><NavLink to="/payroll/process" className={getNavLinkClass} title="Procesar Nómina">{isCollapsed ? 'PN' : 'Procesar Nómina'}</NavLink></li>
+                                </ul>
+                            )}
+                        </li>
+
                         {/* --- Menú Reportes --- */}
                         <li>
                             <div className={menuGroupClass} onClick={() => setIsReportsOpen(!isReportsOpen)}>
@@ -160,13 +176,7 @@ const Layout = ({ children }) => {
                                 {!isCollapsed && <span>Configuración</span>}
                             </NavLink>
                         </li>
-                        {/* --- Menú Empleados --- */}
-                        <li>
-                            <NavLink to="/employees" className={getNavLinkClass}>
-                                <UsersIcon />
-                                {!isCollapsed && <span>Empleados</span>}
-                            </NavLink>
-                        </li>
+
                     </ul>
                 </nav>
 
@@ -179,6 +189,11 @@ const Layout = ({ children }) => {
                     >
                         {isCollapsed ? <span>&times;</span> : 'Cerrar Sesión'}
                     </button>
+                    {!isCollapsed && (
+                        <div className="text-center mt-4 text-xs text-gray-500">
+                            v1.3.0
+                        </div>
+                    )}
                 </div>
             </aside>
 

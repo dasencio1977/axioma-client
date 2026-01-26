@@ -171,8 +171,11 @@ const Employees = () => {
                             <thead className="bg-gray-100 border-b border-gray-200">
                                 <tr>
                                     <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Nombre</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Teléfono</th>
                                     <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Posición</th>
                                     <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Tipo</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Contratación</th>
+                                    <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Terminación</th>
                                     <th className="p-4 text-left text-sm font-semibold text-gray-600 uppercase">Acciones</th>
                                 </tr>
                             </thead>
@@ -182,6 +185,7 @@ const Employees = () => {
                                         <td className="p-4 whitespace-nowrap text-gray-700 font-medium">
                                             {emp.first_name} {emp.last_name_paternal}
                                         </td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{emp.cell_phone || emp.residential_phone || '-'}</td>
                                         <td className="p-4 whitespace-nowrap text-gray-700">{emp.position || '-'}</td>
                                         <td className="p-4 whitespace-nowrap text-gray-700">
                                             <span className={`px-2 py-1 rounded text-xs font-semibold 
@@ -192,14 +196,10 @@ const Employees = () => {
                                                     emp.employment_type === 'Exempt' ? 'Exento' : 'Pro. Services'}
                                             </span>
                                         </td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{emp.hiring_date ? new Date(emp.hiring_date).toLocaleDateString() : '-'}</td>
+                                        <td className="p-4 whitespace-nowrap text-gray-700">{emp.termination_date ? new Date(emp.termination_date).toLocaleDateString() : '-'}</td>
                                         <td className="p-4 whitespace-nowrap">
                                             <div className="flex gap-2">
-                                                <button
-                                                    className="py-1 px-3 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
-                                                    onClick={() => handlePay(emp)}
-                                                >
-                                                    Pagar
-                                                </button>
                                                 <button
                                                     className="py-1 px-3 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 transition-colors shadow-sm"
                                                     onClick={() => handleEdit(emp)}
