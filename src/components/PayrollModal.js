@@ -17,12 +17,18 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
 
     // Breakdown
     const [deductions, setDeductions] = useState({});
+    const [earnings, setEarnings] = useState({}); // New state for Earnings Breakdown
     const [totalDeductions, setTotalDeductions] = useState(0);
     const [netPay, setNetPay] = useState(0);
     const [isManualEdit, setIsManualEdit] = useState(false);
 
+    // Ad-Hoc Deduction Items
+    const [availableDeductions, setAvailableDeductions] = useState([]);
+    const [selectedDeductionToAdd, setSelectedDeductionToAdd] = useState('');
+
     useEffect(() => {
         fetchBankAccounts();
+        fetchPayrollItems();
         initializeAmount();
     }, [employee]);
 
@@ -48,27 +54,35 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
         }
     };
 
-    const initializeAmount = () => {
-        let initAmount = 0;
-        if (employee.employment_type === 'Salaried') {
-            // Default 40 hours * rate
-            initAmount = 40 * (parseFloat(employee.pay_rate) || 0);
-        } else if (employee.employment_type === 'Exempt') {
-            // Fixed Rate for period
-            initAmount = parseFloat(employee.pay_rate) || 0;
-        } else {
-            // Pro Services
-            initAmount = parseFloat(employee.pay_rate) || 0;
+    const fetchPayrollItems = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`${apiUrl}/api/payroll-items`, {
+                headers: { 'x-auth-token': token }
+            });
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                // Filter for deductions only
+                const deductionItems = data.filter(item => item.type === 'Deduction');
+                setAvailableDeductions(deductionItems);
+            }
+        } catch (err) {
+            console.error('Error fetching payroll items:', err);
         }
-        setAmount(initAmount.toFixed(2));
+    };
+
+    const initializeAmount = () => {
+        // Use logic similar to calculateTotalGross but with default hours (40 or 0)
+        let defaultHours = 40;
+        if (employee.employment_type !== 'Salaried') defaultHours = 0;
+        setHours(defaultHours); // Set state
+        calculateTotalGross(defaultHours);
     };
 
     const handleHoursChange = (h) => {
         setHours(h);
         if (employee.employment_type === 'Salaried') {
-            const newAmount = h * (parseFloat(employee.pay_rate) || 0);
-            setAmount(newAmount.toFixed(2));
-            setIsManualEdit(false); // Reset manual flag on auto-calc trigger
+            calculateTotalGross(h);
         }
     };
 
@@ -76,6 +90,7 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
         const gross = parseFloat(grossVal) || 0;
         let breakdown = {};
 
+        // 1. Calculate Statutory Deductions (Based on TOTAL Gross)
         if (employee.employment_type === 'Professional Services') {
             if (gross > 500) {
                 const ret = (gross - 500) * 0.10;
@@ -93,11 +108,81 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
             if (parseFloat(employee.employee_state_disability_percent) > 0) breakdown['Incapacidad'] = getVal(employee.employee_state_disability_percent);
 
             // 401k Loan
-            if (parseFloat(employee.loan_repayment_401k_amount) > 0) breakdown['Préstamo 401k'] = parseFloat(employee.loan_repayment_401k_amount).toFixed(2);
+            const loanRepay = parseFloat(employee.loan_repayment_401k_amount) || 0;
+            if (loanRepay > 0) breakdown['Préstamo 401k'] = loanRepay.toFixed(2);
         }
+
+        // 2. Calculate Dynamic Deductions (Payroll Items)
+        const payrollItems = employee.payroll_items || [];
+        payrollItems.forEach(item => {
+            if (item.type === 'Deduction' || (item.type === 'Tax' && item.name !== 'Income Tax')) {
+                let val = 0;
+                const rate = parseFloat(item.rate_override) || parseFloat(item.default_rate) || 0;
+
+                if (item.calculation_type === 'Fixed Amount') {
+                    val = rate;
+                } else if (item.calculation_type === 'Percentage of Gross') {
+                    val = gross * (rate / 100);
+                }
+
+                if (val > 0) {
+                    breakdown[item.name] = val.toFixed(2);
+                }
+            }
+        });
 
         setDeductions(breakdown);
         updateTotals(breakdown, gross);
+    };
+
+    const calculateTotalGross = (baseHours) => {
+        let basePay = 0;
+        if (employee.employment_type === 'Salaried') {
+            basePay = baseHours * (parseFloat(employee.pay_rate) || 0);
+        } else {
+            basePay = parseFloat(employee.pay_rate) || 0;
+            if (employee.employment_type === 'Exempt') {
+                const salary = parseFloat(employee.annual_salary) || 0;
+                let divisor = 52;
+                switch (employee.payment_frequency) {
+                    case 'Weekly': divisor = 52; break;
+                    case 'BiWeekly': divisor = 26; break;
+                    case 'SemiMonthly': divisor = 24; break;
+                    case 'Monthly': divisor = 12; break;
+                }
+                basePay = salary / divisor;
+            }
+        }
+
+        let earningsTotal = 0;
+        let earningsBreakdown = {};
+        const payrollItems = employee.payroll_items || [];
+
+        payrollItems.forEach(item => {
+            if (item.type === 'Earning') {
+                let val = 0;
+                const rate = parseFloat(item.rate_override) || parseFloat(item.default_rate) || 0;
+
+                if (item.calculation_type === 'Fixed Amount') {
+                    val = rate;
+                } else if (item.calculation_type === 'Hourly Rate') {
+                    val = rate * baseHours;
+                } else if (item.calculation_type === 'Percentage of Gross') {
+                    val = basePay * (rate / 100);
+                }
+
+                if (val > 0) {
+                    earningsTotal += val;
+                    earningsBreakdown[item.name] = val.toFixed(2);
+                }
+            }
+        });
+
+        const total = basePay + earningsTotal;
+        setEarnings(earningsBreakdown);
+        setAmount(total.toFixed(2));
+        setIsManualEdit(false);
+        calculateBreakdown(total);
     };
 
     const updateTotals = (currentDeductions, grossVal) => {
@@ -110,6 +195,38 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
     const handleDeductionChange = (name, value) => {
         setIsManualEdit(true);
         const newDeductions = { ...deductions, [name]: value };
+        setDeductions(newDeductions);
+        updateTotals(newDeductions, amount);
+    };
+
+    const handleAddDeduction = () => {
+        if (!selectedDeductionToAdd) return;
+
+        const item = availableDeductions.find(i => i.item_id === parseInt(selectedDeductionToAdd));
+        if (!item) return;
+
+        // Calculate Default Amount
+        const gross = parseFloat(amount) || 0;
+        let val = 0;
+        const rate = parseFloat(item.default_rate) || 0;
+
+        if (item.calculation_type === 'Fixed Amount') {
+            val = rate;
+        } else if (item.calculation_type === 'Percentage of Gross') {
+            val = gross * (rate / 100);
+        }
+
+        setIsManualEdit(true);
+        const newDeductions = { ...deductions, [item.name]: val.toFixed(2) };
+        setDeductions(newDeductions);
+        updateTotals(newDeductions, amount);
+        setSelectedDeductionToAdd(''); // Reset selection
+    };
+
+    const handleRemoveDeduction = (name) => {
+        setIsManualEdit(true);
+        const newDeductions = { ...deductions };
+        delete newDeductions[name];
         setDeductions(newDeductions);
         updateTotals(newDeductions, amount);
     };
@@ -132,7 +249,7 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
                     gross_amount_override: amount,
                     hours_worked: employee.employment_type === 'Salaried' ? hours : 0,
                     bank_account_id: selectedBank,
-                    deduction_details: deductions // Send modified deductions
+                    deduction_details: deductions
                 })
             });
 
@@ -198,21 +315,68 @@ const PayrollModal = ({ employee, periodId, onClose, onPaymentSuccess }) => {
                             <input
                                 type="number" step="0.01" value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                className={`w - full px - 4 py - 2 border rounded - lg font - semibold text - lg ${employee.employment_type === 'Salaried' ? 'bg-gray-100' : 'bg-white'} `}
+                                className={`w-full px-4 py-2 border rounded-lg font-semibold text-lg ${employee.employment_type === 'Salaried' ? 'bg-gray-100' : 'bg-white'}`}
                                 readOnly={employee.employment_type === 'Salaried'}
                             />
                         </div>
 
+                        {/* Earnings Breakdown */}
+                        {Object.keys(earnings).length > 0 && (
+                            <div className="bg-green-50 p-4 rounded-md border border-green-200 text-sm">
+                                <h4 className="font-semibold mb-2 text-green-800 border-b border-green-200 pb-1">Desglose de Ingresos Adicionales</h4>
+                                <ul className="space-y-2">
+                                    {Object.entries(earnings).map(([name, val]) => (
+                                        <li key={name} className="flex justify-between items-center bg-white p-2 border border-green-100 rounded">
+                                            <span className="text-gray-600 text-sm">{name}</span>
+                                            <span className="text-green-600 font-medium">+${val}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {/* Breakdown */}
                         <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm">
                             <h4 className="font-semibold mb-2 text-gray-700 border-b pb-1">Desglose de Deducciones (Editable)</h4>
+
+                            {/* Add Deduction */}
+                            <div className="flex gap-2 mb-3">
+                                <select
+                                    className="flex-grow border rounded px-2 py-1 text-xs"
+                                    value={selectedDeductionToAdd}
+                                    onChange={(e) => setSelectedDeductionToAdd(e.target.value)}
+                                >
+                                    <option value="">Agregar deducción...</option>
+                                    {availableDeductions.map(item => (
+                                        <option key={item.item_id} value={item.item_id}>{item.name}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={handleAddDeduction}
+                                    className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+
                             {Object.entries(deductions).length === 0 ? (
                                 <p className="text-gray-500 italic">No hay deducciones aplicables.</p>
                             ) : (
                                 <ul className="space-y-2">
                                     {Object.entries(deductions).map(([name, val]) => (
                                         <li key={name} className="flex justify-between items-center bg-white p-2 border rounded">
-                                            <span className="text-gray-600 text-sm">{name}</span>
+                                            <div className="flex items-center h-full">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveDeduction(name)}
+                                                    className="text-red-400 hover:text-red-600 mr-2"
+                                                    title="Remover"
+                                                >
+                                                    &times;
+                                                </button>
+                                                <span className="text-gray-600 text-sm">{name}</span>
+                                            </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-gray-400 text-sm">-$</span>
                                                 <input

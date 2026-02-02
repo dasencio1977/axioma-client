@@ -14,6 +14,8 @@ import ClientForm from './components/ClientForm';
 import ClientStatement from './components/ClientStatement';
 import Employees from './components/Employees';
 import PayrollProcess from './components/PayrollProcess'; // Import PayrollProcess
+import PayrollItems from './components/PayrollItems'; // Import PayrollItems
+
 
 import Invoices from './components/Invoices';
 import InvoiceForm from './components/InvoiceForm';
@@ -77,6 +79,7 @@ function App() {
 
         <Route path="/employees" element={<PrivateRoute><Employees /></PrivateRoute>} />
         <Route path="/payroll/process" element={<PrivateRoute><PayrollProcess /></PrivateRoute>} />
+        <Route path="/payroll/items" element={<PrivateRoute><PayrollItems /></PrivateRoute>} />
 
 
         <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} />

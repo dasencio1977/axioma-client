@@ -5,6 +5,16 @@ import PayrollModal from './PayrollModal';
 // Icons
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
 
+const PayrollIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-green-600">
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="M12 8v8" />
+        <path d="M9 10a3 3 0 0 1 6 0c0 2-3 3-3 3s3 1 3 3a3 3 0 0 1-6 0" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+    </svg>
+);
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const PayrollProcess = () => {
@@ -124,7 +134,10 @@ const PayrollProcess = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Procesar Nómina</h2>
+                <h2 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+                    <PayrollIcon />
+                    Procesar Nómina
+                </h2>
                 <button onClick={() => setShowNewPeriodModal(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                     <PlusIcon /> Nuevo Periodo
                 </button>
@@ -170,6 +183,7 @@ const PayrollProcess = () => {
                                 <th className="p-4 text-right font-semibold text-gray-600 text-xs">Seg. Soc.</th>
                                 <th className="p-4 text-right font-semibold text-gray-600 text-xs">Medicare</th>
                                 <th className="p-4 text-right font-semibold text-gray-600 text-xs">Incap.</th>
+                                <th className="p-4 text-right font-semibold text-gray-600 text-xs">Otros</th>
                                 <th className="p-4 text-right font-semibold text-gray-600">Neto</th>
                                 <th className="p-4 text-right font-semibold text-gray-600">Acción</th>
                             </tr>
@@ -205,6 +219,18 @@ const PayrollProcess = () => {
                                         <td className="p-4 text-right text-gray-600">{d['Seguro Social'] ? `-$${parseFloat(d['Seguro Social']).toFixed(2)}` : '-'}</td>
                                         <td className="p-4 text-right text-gray-600">{d['Medicare'] ? `-$${parseFloat(d['Medicare']).toFixed(2)}` : '-'}</td>
                                         <td className="p-4 text-right text-gray-600">{d['Incapacidad'] ? `-$${parseFloat(d['Incapacidad']).toFixed(2)}` : '-'}</td>
+
+                                        {/* Other Deductions */}
+                                        <td className="p-4 text-right text-gray-600">
+                                            {(() => {
+                                                const standard = ['401k', 'Préstamo 401k', 'Income Tax Estatal', 'Income Tax Federal', 'Retención 10%', 'Seguro Social', 'Medicare', 'Incapacidad'];
+                                                const otherTotal = Object.entries(d).reduce((sum, [key, val]) => {
+                                                    if (!standard.includes(key)) return sum + (parseFloat(val) || 0);
+                                                    return sum;
+                                                }, 0);
+                                                return otherTotal > 0 ? `-$${otherTotal.toFixed(2)}` : '-';
+                                            })()}
+                                        </td>
 
                                         {/* Net */}
                                         <td className="p-4 text-right font-bold text-green-600">

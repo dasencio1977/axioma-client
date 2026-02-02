@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
     const [activeTab, setActiveTab] = useState('personal');
+    const [availablePayrollItems, setAvailablePayrollItems] = useState([]); // All available catalog items
     const [formData, setFormData] = useState({
         // Personal
         first_name: '', initial: '', last_name_paternal: '', last_name_maternal: '',
@@ -43,9 +46,32 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
         emergency_contacts: [
             { name: '', phone: '', address: '', relationship: '' },
             { name: '', phone: '', address: '', relationship: '' },
+            { name: '', phone: '', address: '', relationship: '' },
             { name: '', phone: '', address: '', relationship: '' }
-        ]
+        ],
+
+        // Payroll Items (Array of { payroll_item_id, rate_override, tempId? })
+        payroll_items: []
     });
+
+    useEffect(() => {
+        // Fetch Catalog
+        const fetchCatalog = async () => {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${apiUrl}/api/payroll-items`, {
+                    headers: { 'x-auth-token': token }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setAvailablePayrollItems(data);
+                }
+            } catch (error) {
+                console.error("Error fetching payroll items catalog", error);
+            }
+        };
+        fetchCatalog();
+    }, []);
 
     useEffect(() => {
         if (currentEmployee) {
@@ -60,7 +86,8 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                 ...currentEmployee,
                 is_address_same: currentEmployee.is_address_same || false,
                 is_us_citizen: currentEmployee.is_us_citizen !== false, // default true
-                emergency_contacts: contacts
+                emergency_contacts: contacts,
+                payroll_items: currentEmployee.payroll_items || []
             });
         }
     }, [currentEmployee]);
@@ -129,6 +156,28 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
         setFormData(prev => ({ ...prev, emergency_contacts: updatedContacts }));
     };
 
+    // Payroll Item Handlers
+    const handleAddPayrollItem = () => {
+        // Default to first available item or empty
+        const newItem = { payroll_item_id: '', rate_override: '' };
+        setFormData(prev => ({
+            ...prev,
+            payroll_items: [...prev.payroll_items, newItem]
+        }));
+    };
+
+    const handleRemovePayrollItem = (index) => {
+        const updated = [...formData.payroll_items];
+        updated.splice(index, 1);
+        setFormData(prev => ({ ...prev, payroll_items: updated }));
+    };
+
+    const handlePayrollItemChange = (index, field, value) => {
+        const updated = [...formData.payroll_items];
+        updated[index] = { ...updated[index], [field]: value };
+        setFormData(prev => ({ ...prev, payroll_items: updated }));
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         onSave(formData);
@@ -140,6 +189,7 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
         { id: 'employment', label: 'Empleo' },
         { id: 'tax', label: 'Contributiva' },
         { id: 'financial', label: 'Financiera' },
+        { id: 'payroll_config', label: 'Config. Nómina' },
         { id: 'emergency', label: 'Emergencia' },
     ];
 
@@ -380,6 +430,68 @@ const EmployeeForm = ({ onSave, onCancel, currentEmployee }) => {
                                 <div><label className="block text-sm font-medium mb-1">Número de Cuenta</label><input type="text" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                                 <div><label className="block text-sm font-medium mb-1">Número de Ruta</label><input type="text" name="bank_routing_number" value={formData.bank_routing_number} onChange={handleChange} className="w-full border p-2 rounded" /></div>
                             </>
+                        )}
+                    </div>
+                )}
+
+                {/* Payroll Config */}
+                {activeTab === 'payroll_config' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-lg font-semibold text-gray-800">Rubros Asignados</h4>
+                            <button type="button" onClick={handleAddPayrollItem} className="py-1 px-3 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                                + Añadir Rubro
+                            </button>
+                        </div>
+
+                        {formData.payroll_items.length === 0 ? (
+                            <p className="text-gray-500 italic">No hay rubros asignados a este empleado.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {formData.payroll_items.map((item, index) => {
+                                    const selectedCatalogItem = availablePayrollItems.find(i => i.item_id === parseInt(item.payroll_item_id));
+                                    return (
+                                        <div key={index} className="flex flex-col md:flex-row gap-3 items-end p-3 bg-gray-50 border rounded-lg">
+                                            <div className="flex-grow">
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">Rubro</label>
+                                                <select
+                                                    value={item.payroll_item_id}
+                                                    onChange={(e) => handlePayrollItemChange(index, 'payroll_item_id', e.target.value)}
+                                                    className="w-full border p-2 rounded text-sm"
+                                                >
+                                                    <option value="">Seleccionar...</option>
+                                                    {availablePayrollItems.map(catItem => (
+                                                        <option key={catItem.item_id} value={catItem.item_id}>
+                                                            {catItem.name} ({catItem.type})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="w-full md:w-1/3">
+                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                    Tarifa / Valor Override
+                                                    {selectedCatalogItem && <span className="text-gray-500 font-normal ml-1">(Default: {selectedCatalogItem.default_rate})</span>}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={item.rate_override}
+                                                    onChange={(e) => handlePayrollItemChange(index, 'rate_override', e.target.value)}
+                                                    placeholder={selectedCatalogItem ? selectedCatalogItem.default_rate : "0.00"}
+                                                    className="w-full border p-2 rounded text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="pb-1">
+                                                <button type="button" onClick={() => handleRemovePayrollItem(index)} className="text-red-600 hover:text-red-800 font-medium text-sm">
+                                                    Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         )}
                     </div>
                 )}

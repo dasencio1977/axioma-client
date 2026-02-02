@@ -11,9 +11,33 @@ import {
     SettingsIcon,
     ChevronDownIcon,
     MenuIcon,
-    LandmarkIcon,
-    UsersIcon
+    LandmarkIcon
 } from './Icons';
+
+// Custom Icons
+const PayrollIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        {/* Contorno del documento/cheque */}
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        {/* Símbolo de moneda central */}
+        <path d="M12 8v8" />
+        <path d="M9 10a3 3 0 0 1 6 0c0 2-3 3-3 3s3 1 3 3a3 3 0 0 1-6 0" />
+        {/* Líneas laterales que simulan detalles de seguridad */}
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+    </svg>
+);
+
+const EmployeeIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        {/* Cabeza del empleado */}
+        <circle cx="12" cy="7" r="4" />
+        {/* Cuerpo/Hombros */}
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 2v2" />
+        {/* Badge o corbata para diferenciarlo como profesional */}
+        <path d="M12 11v3" />
+    </svg>
+);
 
 const Layout = ({ children }) => {
     const navigate = useNavigate();
@@ -141,13 +165,18 @@ const Layout = ({ children }) => {
                         {/* --- Menú Empleados --- */}
                         <li>
                             <div className={menuGroupClass} onClick={() => setIsEmployeesOpen(!isEmployeesOpen)}>
-                                <div className="flex items-center gap-3"><UsersIcon /> {!isCollapsed && <span>Empleados</span>}</div>
+                                <div className="flex items-center gap-3"><EmployeeIcon /> {!isCollapsed && <span>Empleados</span>}</div>
                                 {!isCollapsed && <ChevronDownIcon className={`w-4 h-4 transition-transform ${isEmployeesOpen ? 'rotate-180' : ''}`} />}
                             </div>
                             {isEmployeesOpen && (
                                 <ul className={`list-none ${isCollapsed ? 'pl-0' : 'pl-6'} mt-2 space-y-1`}>
                                     <li><NavLink to="/employees" className={getNavLinkClass} title="Lista de Empleados">{isCollapsed ? 'LE' : 'Lista de Empleados'}</NavLink></li>
-                                    <li><NavLink to="/payroll/process" className={getNavLinkClass} title="Procesar Nómina">{isCollapsed ? 'PN' : 'Procesar Nómina'}</NavLink></li>
+                                    <li><NavLink to="/payroll/process" className={getNavLinkClass} title="Procesar Nómina">
+                                        {isCollapsed ? 'PN' : <span className="flex items-center gap-2">Procesar Nómina</span>}
+                                    </NavLink></li>
+                                    <li><NavLink to="/payroll/items" className={getNavLinkClass} title="Rubros de Nómina">
+                                        {isCollapsed ? 'RN' : 'Rubros de Nómina'}
+                                    </NavLink></li>
                                 </ul>
                             )}
                         </li>

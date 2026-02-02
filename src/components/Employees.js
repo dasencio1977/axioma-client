@@ -7,6 +7,15 @@ import axiomaIcon from '../assets/axioma-icon.png';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
+// Custom Icon (Inline for now)
+const EmployeeIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-blue-600">
+        <circle cx="12" cy="7" r="4" />
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 2v2" />
+        <path d="M12 11v3" />
+    </svg>
+);
+
 const Employees = () => {
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -121,7 +130,7 @@ const Employees = () => {
         <div>
             {/*Header*/}
             <h2 className="flex items-center gap-3 text-3xl font-semibold text-gray-800 mb-8">
-                <img src={axiomaIcon} alt="Axioma Icon" className="w-8 h-8 object-contain" />
+                <EmployeeIcon />
                 Empleados
             </h2>
 
